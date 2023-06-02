@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\abys-agrivet-backend.props" />
+</Project>
