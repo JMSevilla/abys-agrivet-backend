@@ -70,7 +70,7 @@ where TRepository : UsersRepository<TEntity>
     [Route("customer-account-registration"), HttpPost]
     public async Task<IActionResult> CustomerAccountCreation([FromBody] TEntity entity)
     {
-        await _repository.CustomerAccountRegistration(entity);
-        return Ok(200);
+        var result = await _repository.CustomerAccountRegistration(entity);
+        return Ok(result);
     }
 }

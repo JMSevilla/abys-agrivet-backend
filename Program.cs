@@ -98,6 +98,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<BaseConstructorUsers>();
 builder.Services.AddScoped<BaseConstructorBranches>();
 builder.Services.AddScoped<BaseConstructorVerification>();
+builder.Services.AddScoped<BaseConstructorServices>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 var app = builder.Build();
 

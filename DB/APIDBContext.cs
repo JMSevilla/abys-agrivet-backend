@@ -12,10 +12,12 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        //builder.Ignore<Users>();
-        //builder.Ignore<Branch>();
+        // builder.Ignore<Users>();
+        // builder.Ignore<Branch>();
+        // builder.Ignore<Verification>();
     }
     public DbSet<Users> UsersEnumerable { get; set; }
     public DbSet<Branch> Branches { get; set; }
     public DbSet<Verification> Verifications { get; set; }
+    public DbSet<Model.Services> ServicesEnumerable { get; set; }
 }

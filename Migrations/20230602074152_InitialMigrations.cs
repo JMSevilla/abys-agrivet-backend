@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace abys_agrivet_backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -53,6 +53,25 @@ namespace abys_agrivet_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "branches",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    branch_id = table.Column<int>(type: "int", nullable: false),
+                    branchName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    branchKey = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    branchPath = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    branchStatus = table.Column<string>(type: "nvarchar(1)", nullable: false),
+                    createdAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_branches", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "users",
                 columns: table => new
                 {
@@ -64,10 +83,11 @@ namespace abys_agrivet_backend.Migrations
                     username = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     password = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    branch = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    branch = table.Column<int>(type: "int", nullable: false),
+                    phoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     status = table.Column<string>(type: "nvarchar(1)", nullable: false),
                     verified = table.Column<string>(type: "nvarchar(1)", nullable: false),
-                    imgurl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    imgurl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     access_level = table.Column<int>(type: "int", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -75,6 +95,25 @@ namespace abys_agrivet_backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_users", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "verification",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    code = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    resendCount = table.Column<int>(type: "int", nullable: false),
+                    isValid = table.Column<int>(type: "int", nullable: false),
+                    type = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    createdAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_verification", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -242,7 +281,13 @@ namespace abys_agrivet_backend.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "branches");
+
+            migrationBuilder.DropTable(
                 name: "users");
+
+            migrationBuilder.DropTable(
+                name: "verification");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

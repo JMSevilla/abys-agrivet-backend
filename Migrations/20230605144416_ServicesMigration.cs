@@ -6,29 +6,26 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace abys_agrivet_backend.Migrations
 {
     /// <inheritdoc />
-    public partial class VerificationMigration : Migration
+    public partial class ServicesMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-
             migrationBuilder.CreateTable(
-                name: "verification",
+                name: "services",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    email = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    code = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    resendCount = table.Column<int>(type: "int", nullable: false),
-                    isValid = table.Column<int>(type: "int", nullable: false),
-                    type = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    serviceName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    serviceBranch = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    serviceStatus = table.Column<int>(type: "int", nullable: true),
                     createdAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     updatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_verification", x => x.id);
+                    table.PrimaryKey("PK_services", x => x.id);
                 });
         }
 
@@ -36,9 +33,7 @@ namespace abys_agrivet_backend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "verification");
-
-            
+                name: "services");
         }
     }
 }

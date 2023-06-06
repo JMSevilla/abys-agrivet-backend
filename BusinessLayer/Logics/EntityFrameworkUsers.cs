@@ -171,6 +171,7 @@ where TContext : APIDBContext
                                 };
                                 obj.status = "SUCCESS";
                                 obj.branchPath = FindPathOnBranches.branchPath;
+                                obj.usertype = "employee";
                                 return obj;
                             }
 
@@ -200,7 +201,73 @@ where TContext : APIDBContext
         }
         else
         {
-            return "Customer";
+            // Customer / Client
+              var user = await _userManager.FindByNameAsync(loginParameters.email);
+        
+        var lookUpAllUserBasedEmailDefault = await context.Set<TEntity>()
+            .Where(x => x.email == loginParameters.email ).FirstOrDefaultAsync();
+        
+        dynamic obj = new ExpandoObject();
+        if (string.IsNullOrWhiteSpace(loginParameters.email) || string.IsNullOrWhiteSpace(loginParameters.password))
+        {
+            return "EMPTY";
+        }
+        else
+        {
+            string encryptedPassword =
+                lookUpAllUserBasedEmailDefault == null ? "" : lookUpAllUserBasedEmailDefault.password;
+                if (lookUpAllUserBasedEmailDefault.status == Convert.ToChar("1"))
+                {
+                    if (BCrypt.Net.BCrypt.Verify(loginParameters.password, encryptedPassword))
+                    {
+                        if (lookUpAllUserBasedEmailDefault.branch == loginParameters.branch)
+                        {
+                            if (user != null && await _userManager.CheckPasswordAsync(user, loginParameters.password))
+                            {
+                                var userRoles = await _userManager.GetRolesAsync(user);
+                                var claims = new List<Claim>
+                                {
+                                    new Claim(ClaimTypes.Name, user.UserName),
+                                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                                };
+                                foreach (var userRole in userRoles)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, userRole));
+                                }
+
+                                var token = CreateToken(claims);
+                                var refreshToken = GenerateRefreshToken();
+
+                                _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"],
+                                    out int refreshTokenValidityInDays);
+                                user.RefreshToken = refreshToken;
+                                user.RefreshTokenExpiryTime = DateTime.Now.AddDays(refreshTokenValidityInDays);
+                                await _userManager.UpdateAsync(user);
+                                obj.TokenInfo = new
+                                {
+                                    Token = new JwtSecurityTokenHandler().WriteToken(token),
+                                    RefreshToken = refreshToken,
+                                    Expiration = token.ValidTo
+                                };
+                                obj.status = "SUCCESS";
+                                obj.usertype = "customer";
+                                return obj;
+                            }
+
+                            return "UNAUTHORIZED";
+                        }
+                    }
+                    else
+                    {
+                        return "INVALID_PASSWORD";
+                    }
+                }
+                else
+                {
+                    return "ACCOUNT_DISABLED";
+                }
+            
+        }
         }
         return "SOMETHING_WENT_WRONG";
     }
@@ -281,7 +348,7 @@ where TContext : APIDBContext
 
     public async Task<dynamic> CustomerAccountRegistration(TEntity entity)
     {
-        bool checkExistingAccount = await context.Set<TEntity>().AnyAsync(x => x.email == entity.email);
+        var checkExistingAccount = await context.Set<TEntity>().AnyAsync(x => x.email == entity.email);
         if (checkExistingAccount)
         {
             return "account_exist";
@@ -298,7 +365,7 @@ where TContext : APIDBContext
             entity.password = mightHashPassword;
             entity.access_level = 3;
             entity.branch = 0;
-            entity.status = Convert.ToChar("0");
+            entity.status = Convert.ToChar("1");
             entity.phoneNumber = entity.phoneNumber;
             entity.imgurl = "no-image-found";
             entity.verified = Convert.ToChar("0");
@@ -307,7 +374,7 @@ where TContext : APIDBContext
             
             context.Set<TEntity>().Add(entity);
             await context.SaveChangesAsync();
-            return entity;
+            return 200;
         }
     }
 

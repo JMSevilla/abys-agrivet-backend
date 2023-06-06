@@ -20,11 +20,25 @@ where TRepository : VerificationRepository<TEntity>
    public async Task<IActionResult> SendSMSVerification([FromBody] TEntity entity, [FromRoute] string email,
       [FromRoute] string phoneNumber)
    {
-      await _repository.SMSVerificationDataManagement(entity, new()
+      var result = await _repository.SMSVerificationDataManagement(entity, new()
       {
          email = email,
          phoneNumber = phoneNumber
       });
-      return Ok(200);
+      return Ok(result);
+   }
+
+   [Route("check-verification-code/{code}/{email}"), HttpPost]
+   public async Task<IActionResult> CheckSMSVerification([FromRoute] string code, [FromRoute] string email)
+   {
+      var result = await _repository.SMSCheckVerificationCode(code, email);
+      return Ok(result);
+   }
+
+   [Route("sms-resend-verification/{type}/{email}"), HttpPost]
+   public async Task<IActionResult> SMSResendVerification([FromRoute] string type, [FromRoute] string email)
+   {
+      var result = await _repository.SMSResendVerificationCode(type, email);
+      return Ok(result);
    }
 }
