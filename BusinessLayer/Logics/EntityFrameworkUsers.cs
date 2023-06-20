@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using abys_agrivet_backend.DB;
+using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.JWTResponse;
 using abys_agrivet_backend.Helper.LoginParams;
@@ -171,7 +172,9 @@ where TContext : APIDBContext
                                 };
                                 obj.status = "SUCCESS";
                                 obj.branchPath = FindPathOnBranches.branchPath;
-                                obj.usertype = "employee";
+                                obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
+                                obj.uid = lookUpAllUserBasedEmailDefault.id;
+                                obj.references = lookUpAllUserBasedEmailDefault;
                                 return obj;
                             }
 
@@ -203,7 +206,7 @@ where TContext : APIDBContext
         {
             // Customer / Client
               var user = await _userManager.FindByNameAsync(loginParameters.email);
-        
+              
         var lookUpAllUserBasedEmailDefault = await context.Set<TEntity>()
             .Where(x => x.email == loginParameters.email ).FirstOrDefaultAsync();
         
@@ -250,11 +253,17 @@ where TContext : APIDBContext
                                     Expiration = token.ValidTo
                                 };
                                 obj.status = "SUCCESS";
-                                obj.usertype = "customer";
+                                obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
+                                obj.uid = lookUpAllUserBasedEmailDefault.id;
+                                obj.references = lookUpAllUserBasedEmailDefault;
                                 return obj;
                             }
 
                             return "UNAUTHORIZED";
+                        }
+                        else
+                        {
+                            return "NO_ACCOUNT_ON_THIS_BRANCH";
                         }
                     }
                     else
@@ -393,5 +402,39 @@ where TContext : APIDBContext
         if (!result.Succeeded)
             return "something_wrong_creating_account";
         return "Success";
+    }
+
+    public async Task<dynamic> ReUsableCheckingEmail(string email)
+    {
+        var result = await context.Set<TEntity>().AnyAsync(x => x.email == email);
+        if (result)
+        {
+            return "exist";
+        }
+        else
+        {
+            return "not_exist";
+        }
+    }
+
+    public async Task<dynamic> ChangePassword(ForgotPasswordParams forgotPasswordParams)
+    {
+        var userIdentifierIfAny = await context.Set<TEntity>()
+            .AnyAsync(x => x.email == forgotPasswordParams.email);
+        var changePasswordEntity = await context.Set<TEntity>()
+            .Where(x => x.email == forgotPasswordParams.email).FirstOrDefaultAsync();
+        var core_user = await _userManager.FindByEmailAsync(forgotPasswordParams.email);
+        if (userIdentifierIfAny)
+        {
+            changePasswordEntity.password = BCrypt.Net.BCrypt.HashPassword(forgotPasswordParams.password);
+            var code = await _userManager.GeneratePasswordResetTokenAsync(core_user);
+            var result = await _userManager.ResetPasswordAsync(core_user, code, forgotPasswordParams.password);
+            if (!result.Succeeded)
+                return 401;
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 401;
     }
 }

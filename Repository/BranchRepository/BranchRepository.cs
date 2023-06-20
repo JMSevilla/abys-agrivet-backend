@@ -9,4 +9,5 @@ public interface BranchRepository<T> where T : class, IBranches
     public Task<dynamic> saveBranch(T entity);
     public Task<List<T>> BranchManagementFindAll();
     public Task<dynamic> GroupBranchFunctions(string func, T entity);
+    public Task<List<T>> BranchExceptAllBranch();
 }

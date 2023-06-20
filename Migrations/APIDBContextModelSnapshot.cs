@@ -226,7 +226,7 @@ namespace abys_agrivet_backend.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("abys_agrivet_backend.Model.Branch", b =>
+            modelBuilder.Entity("abys_agrivet_backend.Model.Appointment", b =>
                 {
                     b.Property<int>("id")
                         .ValueGeneratedOnAdd()
@@ -234,78 +234,11 @@ namespace abys_agrivet_backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
 
-                    b.Property<string>("branchKey")
+                    b.Property<string>("appointmentSchedule")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("branchName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("branchPath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("branchStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(1)");
 
                     b.Property<int>("branch_id")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("createdAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("updatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("id");
-
-                    b.ToTable("branches");
-                });
-
-            modelBuilder.Entity("abys_agrivet_backend.Model.Services", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<DateTime>("createdAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("serviceBranch")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("serviceName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("serviceStatus")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("updatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("id");
-
-                    b.ToTable("services");
-                });
-
-            modelBuilder.Entity("abys_agrivet_backend.Model.Users", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<int>("access_level")
-                        .HasColumnType("int");
-
-                    b.Property<int>("branch")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("created_at")
@@ -315,21 +248,23 @@ namespace abys_agrivet_backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("firstname")
+                    b.Property<string>("fullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("imgurl")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("isSessionStarted")
+                        .HasColumnType("int");
 
-                    b.Property<string>("lastname")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("isWalkedIn")
+                        .HasColumnType("int");
 
-                    b.Property<string>("middlename")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("managersId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("password")
+                    b.Property<int?>("notify")
+                        .HasColumnType("int");
+
+                    b.Property<string>("petInfo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -337,60 +272,90 @@ namespace abys_agrivet_backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("status")
+                    b.Property<int>("reminderType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("service_id")
                         .IsRequired()
-                        .HasColumnType("nvarchar(1)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("status")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("updated_at")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("username")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("verified")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(1)");
-
                     b.HasKey("id");
 
-                    b.ToTable("users");
+                    b.ToTable("appointment");
                 });
 
-            modelBuilder.Entity("abys_agrivet_backend.Model.Verification", b =>
+            modelBuilder.Entity("abys_agrivet_backend.Model.FollowUpAppointment", b =>
                 {
-                    b.Property<int>("id")
+                    b.Property<int>("followupId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("followupId"));
 
-                    b.Property<string>("code")
+                    b.Property<int>("branch_id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("customerName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("createdAt")
+                    b.Property<string>("diagnosis")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("end")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("email")
+                    b.Property<string>("followupDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("followupServices")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("isValid")
+                    b.Property<int>("id")
                         .HasColumnType("int");
 
-                    b.Property<int>("resendCount")
+                    b.Property<int>("isHoliday")
                         .HasColumnType("int");
 
-                    b.Property<string>("type")
+                    b.Property<int?>("isSessionStarted")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("managersId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("notificationType")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("updatedAt")
+                    b.Property<string>("petInformation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("start")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("id");
+                    b.Property<int>("status")
+                        .HasColumnType("int");
 
-                    b.ToTable("verification");
+                    b.Property<string>("title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("treatment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("followupId");
+
+                    b.HasIndex("id");
+
+                    b.ToTable("follow_up_appointment");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -442,6 +407,17 @@ namespace abys_agrivet_backend.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("abys_agrivet_backend.Model.FollowUpAppointment", b =>
+                {
+                    b.HasOne("abys_agrivet_backend.Model.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
                 });
 #pragma warning restore 612, 618
         }

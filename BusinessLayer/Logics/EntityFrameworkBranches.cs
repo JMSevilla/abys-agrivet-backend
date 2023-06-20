@@ -101,4 +101,9 @@ where TContext : APIDBContext
             throw;
         }
     }
+
+    public async Task<List<TEntity>> BranchExceptAllBranch()
+    {
+        return await context.Set<TEntity>().Where(x => x.branch_id != 6).ToListAsync();
+    }
 }

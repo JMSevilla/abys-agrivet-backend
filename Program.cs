@@ -3,15 +3,19 @@ using abys_agrivet_backend.Authentication;
 using abys_agrivet_backend.BusinessLayer.Constructors;
 using abys_agrivet_backend.DB;
 using abys_agrivet_backend.Helper.JWT;
+using abys_agrivet_backend.Helper.MailSettings;
+using abys_agrivet_backend.Repository.ThirdPartyServices;
+using MailKit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MailService = abys_agrivet_backend.Services.MailService;
 
 var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
-
+builder.Services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
 builder.Services.AddDbContext<APIDBContext>(options => 
     options.UseSqlServer(configuration["connectionStrings:localenv"],
         providerOptions => providerOptions.EnableRetryOnFailure())
@@ -48,7 +52,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(myappOrigins, policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -99,7 +103,9 @@ builder.Services.AddScoped<BaseConstructorUsers>();
 builder.Services.AddScoped<BaseConstructorBranches>();
 builder.Services.AddScoped<BaseConstructorVerification>();
 builder.Services.AddScoped<BaseConstructorServices>();
+builder.Services.AddScoped<BaseConstructorAppointment>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
+builder.Services.AddTransient<IMailServices, MailService>();
 var app = builder.Build();
 
 

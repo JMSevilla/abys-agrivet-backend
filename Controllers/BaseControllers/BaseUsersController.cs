@@ -1,4 +1,5 @@
-﻿using abys_agrivet_backend.Helper.JWT;
+﻿using abys_agrivet_backend.Helper.ForgotPassword;
+using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.LoginParams;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.UsersRepository;
@@ -52,7 +53,7 @@ where TRepository : UsersRepository<TEntity>
         var result = await _repository.RefreshToken(accessWithRefresh);
         return Ok(result);
     }
-    [Authorize]
+    
     [Route("uam-add-new-user"), HttpPost]
     public async Task<IActionResult> UAMCreateNewUser([FromBody] TEntity entity)
     {
@@ -71,6 +72,20 @@ where TRepository : UsersRepository<TEntity>
     public async Task<IActionResult> CustomerAccountCreation([FromBody] TEntity entity)
     {
         var result = await _repository.CustomerAccountRegistration(entity);
+        return Ok(result);
+    }
+
+    [Route("check-email-users/{email}"), HttpGet]
+    public async Task<IActionResult> CheckEmails([FromRoute] string email)
+    {
+        var result = await _repository.ReUsableCheckingEmail(email);
+        return Ok(result);
+    }
+
+    [Route("change-password"), HttpPut]
+    public async Task<IActionResult> ChangePassword([FromBody] ForgotPasswordParams forgotPasswordParams)
+    {
+        var result = await _repository.ChangePassword(forgotPasswordParams);
         return Ok(result);
     }
 }

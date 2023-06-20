@@ -47,4 +47,11 @@ where TRepository : BranchRepository<TEntity>
       var result = await _repository.GroupBranchFunctions(func, entity);
       return Ok(result);
    }
+
+   [Route("appointment-branch-list"), HttpGet]
+   public async Task<IActionResult> AppointmentBranchList()
+   {
+      var result = await _repository.BranchExceptAllBranch();
+      return Ok(result);
+   }
 }

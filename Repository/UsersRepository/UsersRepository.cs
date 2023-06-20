@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.LoginParams;
 using abys_agrivet_backend.Interfaces;
@@ -22,4 +23,6 @@ public interface UsersRepository<T> where T : class, IUsers
 
     public Task<dynamic> CustomerAccountRegistration(T entity);
     public Task<dynamic> JWTAccountCreation(JWTCredentials jwtCredentials);
+    public Task<dynamic> ReUsableCheckingEmail(string email);
+    public Task<dynamic> ChangePassword(ForgotPasswordParams forgotPasswordParams);
 }

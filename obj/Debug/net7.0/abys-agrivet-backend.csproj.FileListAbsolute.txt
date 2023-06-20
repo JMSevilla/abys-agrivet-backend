@@ -168,3 +168,6 @@ C:\Users\miggy\Documents\digital_resolve_internal\abys\obj\Debug\net7.0\refint\a
 C:\Users\miggy\Documents\digital_resolve_internal\abys\obj\Debug\net7.0\abys-agrivet-backend.pdb
 C:\Users\miggy\Documents\digital_resolve_internal\abys\obj\Debug\net7.0\abys-agrivet-backend.genruntimeconfig.cache
 C:\Users\miggy\Documents\digital_resolve_internal\abys\obj\Debug\net7.0\ref\abys-agrivet-backend.dll
+C:\Users\jm4583104\OneDrive - Willis Towers Watson\Desktop\abys-agrivet\abys-agrivet-backend\abys-agrivet-backend\bin\Debug\net7.0\BouncyCastle.Cryptography.dll
+C:\Users\jm4583104\OneDrive - Willis Towers Watson\Desktop\abys-agrivet\abys-agrivet-backend\abys-agrivet-backend\bin\Debug\net7.0\MailKit.dll
+C:\Users\jm4583104\OneDrive - Willis Towers Watson\Desktop\abys-agrivet\abys-agrivet-backend\abys-agrivet-backend\bin\Debug\net7.0\MimeKit.dll

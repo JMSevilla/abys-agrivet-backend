@@ -15,9 +15,15 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
         // builder.Ignore<Users>();
         // builder.Ignore<Branch>();
         // builder.Ignore<Verification>();
+        // builder.Ignore<Model.Services>();
+        // builder.Ignore<Schedule>();
+        // builder.Ignore<Appointment>();
     }
     public DbSet<Users> UsersEnumerable { get; set; }
     public DbSet<Branch> Branches { get; set; }
     public DbSet<Verification> Verifications { get; set; }
     public DbSet<Model.Services> ServicesEnumerable { get; set; }
+    public DbSet<Appointment> Appointments { get; set; }
+    public DbSet<Schedule> Schedules { get; set; }
+    public DbSet<FollowUpAppointment> FollowUpAppointments { get; set; }
 }

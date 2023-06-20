@@ -28,10 +28,10 @@ where TRepository : VerificationRepository<TEntity>
       return Ok(result);
    }
 
-   [Route("check-verification-code/{code}/{email}"), HttpPost]
-   public async Task<IActionResult> CheckSMSVerification([FromRoute] string code, [FromRoute] string email)
+   [Route("check-verification-code/{code}/{email}/{type}"), HttpPost]
+   public async Task<IActionResult> CheckSMSVerification([FromRoute] string code, [FromRoute] string email, [FromRoute] string? type)
    {
-      var result = await _repository.SMSCheckVerificationCode(code, email);
+      var result = await _repository.SMSCheckVerificationCode(code, email, type);
       return Ok(result);
    }
 
