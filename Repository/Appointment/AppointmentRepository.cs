@@ -1,4 +1,5 @@
-﻿using abys_agrivet_backend.Helper.SearchEngine;
+﻿using System.Linq.Expressions;
+using abys_agrivet_backend.Helper.SearchEngine;
 using abys_agrivet_backend.Helper.SessionActions;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Model;
@@ -25,6 +26,9 @@ public interface AppointmentRepository<T> where T : class, IAppointment
     public Task<dynamic> AppointmentSession(SessionActions sessionActions);
     public Task<dynamic> GetAssignedSessionUsers(int manageruid);
     public Task<dynamic> AppointmentMakeItDone(int id);
-    public Task<dynamic> FollowUpAppointmentsList(int branch_id);
+    public Task<dynamic> FollowUpAppointmentsList(int branch_id, int appointmentId);
     public IQueryable<dynamic> SearchFollowUpAppointments(string start, string end, string customerName);
+    public Task<dynamic> FollowUpAppointmentSession(FollowUpSessionActions followUpSessionActions);
+    public Task<dynamic> getTodaysAppointment(int branch_id);
+    public Task<dynamic> CountSessionDone(int branch_id, int id);
 }

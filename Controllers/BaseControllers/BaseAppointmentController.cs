@@ -141,10 +141,10 @@ where TRepository : AppointmentRepository<TEntity>
         return Ok(result);
     }
 
-    [Route("follow-up-appointments-list/{branch_id}"), HttpGet]
-    public async Task<dynamic> FollowUpAppointmentsList([FromRoute] int branch_id)
+    [Route("follow-up-appointments-list/{branch_id}/{appointmentId}"), HttpGet]
+    public async Task<dynamic> FollowUpAppointmentsList([FromRoute] int branch_id, [FromRoute] int appointmentId)
     {
-        var result = await _repository.FollowUpAppointmentsList(branch_id);
+        var result = await _repository.FollowUpAppointmentsList(branch_id, appointmentId);
         return Ok(result);
     }
 
@@ -152,6 +152,27 @@ where TRepository : AppointmentRepository<TEntity>
     public IActionResult SearchEngineFollowUpAppointments([FromRoute] string start, [FromRoute] string end, [FromRoute] string customerName)
     {
         var result = _repository.SearchFollowUpAppointments(start, end, customerName);
+        return Ok(result);
+    }
+
+    [Route("follow-up-session-management"), HttpPut]
+    public async Task<IActionResult> FollowUpSessionManagement([FromBody] FollowUpSessionActions followUpSessionActions)
+    {
+        var result = await _repository.FollowUpAppointmentSession(followUpSessionActions);
+        return Ok(result);
+    }
+
+    [Route("follow-up-count-done/{branch_id}/{appointmentId}"), HttpGet]
+    public async Task<IActionResult> FollowUpCountDoneSession([FromRoute] int branch_id, [FromRoute] int appointmentId)
+    {
+        var result = await _repository.CountSessionDone(branch_id, appointmentId);
+        return Ok(result);
+    }
+
+    [Route("get-todays-appointment/{branch_id}"), HttpGet]
+    public async Task<IActionResult> getTodaysAppointment([FromRoute] int branch_id)
+    {
+        var result = await _repository.getTodaysAppointment(branch_id);
         return Ok(result);
     }
 }

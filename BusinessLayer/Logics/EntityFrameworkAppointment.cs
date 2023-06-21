@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Linq.Expressions;
 using abys_agrivet_backend.DB;
 using abys_agrivet_backend.Helper.MailSettings;
 using abys_agrivet_backend.Helper.Schedule;
@@ -227,8 +228,23 @@ where TContext : APIDBContext
     public async Task<dynamic> getAllAppointmentPerBranch(int branch_id)
     {
         var findAllAppointmentsBasedOnBranch = await context.Set<TEntity>()
-            .Where(x => x.branch_id == branch_id && x.status == 1).ToListAsync();
+            .Where(x => x.branch_id == branch_id && x.status == 1 ).ToListAsync();
         return findAllAppointmentsBasedOnBranch;
+    }
+
+  
+    public async Task<dynamic> getTodaysAppointment(int branch_id)
+    {
+        var getTodaysAppointment = await context.Set<TEntity>().Where(x => x.branch_id == branch_id
+                                                                           && x.created_at.Date == DateTime.Today)
+            .ToListAsync();
+        return getTodaysAppointment;
+    }
+
+    public async Task<dynamic> CountSessionDone(int branch_id, int id)
+    {
+        var result = await context.FollowUpAppointments.Where(x =>  x.branch_id == branch_id).FirstOrDefaultAsync();
+        return result.isSessionStarted;
     }
 
     public async Task<dynamic> createFollowUpAppointment(FollowUpAppointment followUpAppointment)
@@ -241,7 +257,6 @@ where TContext : APIDBContext
         }
         else
         {
-            updateEntity.status = 2;
             await context.FollowUpAppointments.AddAsync(followUpAppointment);
             await context.SaveChangesAsync();
             if (followUpAppointment.notificationType == "email")
@@ -281,7 +296,7 @@ where TContext : APIDBContext
 
         return 200;
     }
-
+    
     public async Task<dynamic> GetAssignedSessionUsers(int manageruid)
     {
         var result = await context.UsersEnumerable.Where(x => x.id == manageruid)
@@ -303,10 +318,10 @@ where TContext : APIDBContext
         return 201;
     }
 
-    public async Task<dynamic> FollowUpAppointmentsList(int branch_id)
+    public async Task<dynamic> FollowUpAppointmentsList(int branch_id, int appointmentId)
     {
         var findAllFollowUpAppointmentsBasedOnBranch = await context.FollowUpAppointments
-            .Where(x => x.branch_id == branch_id && x.status == 1).ToListAsync();
+            .Where(x => x.branch_id == branch_id && x.id == appointmentId).ToListAsync();
         return findAllFollowUpAppointmentsBasedOnBranch;
     }
 
@@ -351,4 +366,29 @@ where TContext : APIDBContext
             return searchQuery;
         }
     }
+
+    public async Task<dynamic> FollowUpAppointmentSession(FollowUpSessionActions followUpSessionActions)
+    {
+        var sessionManagement = await context.FollowUpAppointments.Where(x => x.followupId == followUpSessionActions.id)
+            .FirstOrDefaultAsync();
+        switch (followUpSessionActions.actions)
+        {
+            case "start":
+                sessionManagement.isSessionStarted = 1;
+                await context.SaveChangesAsync();
+                return 200;
+            case "end":
+                sessionManagement.isSessionStarted = 2;
+                await context.SaveChangesAsync();
+                return 201;
+            case "done":
+                sessionManagement.status = 2;
+                sessionManagement.isSessionStarted = 3;
+                await context.SaveChangesAsync();
+                return 202;
+        }
+
+        return 202;
+    }
+
 }
