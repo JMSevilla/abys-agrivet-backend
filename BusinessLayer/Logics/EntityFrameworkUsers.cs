@@ -8,12 +8,15 @@ using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.JWTResponse;
 using abys_agrivet_backend.Helper.LoginParams;
+using abys_agrivet_backend.Helper.UsersProps;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.UsersRepository;
 using abys_agrivet_backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace abys_agrivet_backend.BusinessLayer.Logics;
 
@@ -72,7 +75,7 @@ where TContext : APIDBContext
     {
         var checkUserIfExists = await context.Set<TEntity>().AnyAsync(x => x.email == entity.email);
         var userExists = await _userManager.FindByEmailAsync(entity.email);
-        
+
         if (checkUserIfExists)
         {
             return "user_exists";
@@ -107,23 +110,26 @@ where TContext : APIDBContext
 
     public List<TEntity> UAMGetAll()
     {
-        return context.Set<TEntity>().Where(x => x.status == Convert.ToChar("1")).ToList();
+        int[] branches = new[] { 1, 2, 3, 4, 5, 6 };
+        return context.Set<TEntity>().Where(x => branches.Contains(x.branch)).ToList();
     }
 
     public async Task<dynamic> AccountSigningIn(LoginParameters loginParameters)
     {
-        if (loginParameters.accountType == "employee")
-        {
-            var user = await _userManager.FindByNameAsync(loginParameters.email);
+
+        var user = await _userManager.FindByNameAsync(loginParameters.email);
+        var findBranchIdByEmail =
+            await context.Set<TEntity>().Where(x => x.email == loginParameters.email).FirstOrDefaultAsync();
         bool lookUpUserBasedOnBranch = await context.Set<TEntity>()
-            .AnyAsync(x => x.email == loginParameters.email && x.branch == loginParameters.branch);
-        
+            .AnyAsync(x => x.email == loginParameters.email && x.branch == findBranchIdByEmail.branch);
+
         var lookUpAllUserBasedEmailDefault = await context.Set<TEntity>()
-            .Where(x => x.email == loginParameters.email && x.branch == loginParameters.branch).FirstOrDefaultAsync();
+            .Where(x => x.email == loginParameters.email && x.branch == findBranchIdByEmail.branch).FirstOrDefaultAsync();
         var checkBranchFromSource = await context.Branches.AnyAsync(x =>
-            x.branch_id == loginParameters.branch && x.branchStatus == Convert.ToChar("1"));
+            x.branch_id == findBranchIdByEmail.branch && x.branchStatus == Convert.ToChar("1"));
         var FindPathOnBranches = await
-            context.Branches.Where(x => x.branch_id == loginParameters.branch).FirstOrDefaultAsync();
+            context.Branches.Where(x => x.branch_id == findBranchIdByEmail.branch).FirstOrDefaultAsync();
+
         dynamic obj = new ExpandoObject();
         if (string.IsNullOrWhiteSpace(loginParameters.email) || string.IsNullOrWhiteSpace(loginParameters.password))
         {
@@ -133,152 +139,137 @@ where TContext : APIDBContext
         {
             string encryptedPassword =
                 lookUpAllUserBasedEmailDefault == null ? "" : lookUpAllUserBasedEmailDefault.password;
+
             if (checkBranchFromSource)
             {
                 if (lookUpUserBasedOnBranch)
-            {
-                if (lookUpAllUserBasedEmailDefault.status == Convert.ToChar("1"))
                 {
-                    if (BCrypt.Net.BCrypt.Verify(loginParameters.password, encryptedPassword))
+                    if (lookUpAllUserBasedEmailDefault.status == Convert.ToChar("1"))
                     {
-                        if (lookUpAllUserBasedEmailDefault.branch == loginParameters.branch)
+                        if (BCrypt.Net.BCrypt.Verify(loginParameters.password, encryptedPassword))
                         {
-                            if (user != null && await _userManager.CheckPasswordAsync(user, loginParameters.password))
+                            if (lookUpAllUserBasedEmailDefault.branch == findBranchIdByEmail.branch)
                             {
-                                var userRoles = await _userManager.GetRolesAsync(user);
-                                var claims = new List<Claim>
+                                if (user != null && await _userManager.CheckPasswordAsync(user, loginParameters.password))
+                                {
+                                    var userRoles = await _userManager.GetRolesAsync(user);
+                                    var claims = new List<Claim>
                                 {
                                     new Claim(ClaimTypes.Name, user.UserName),
                                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                                 };
-                                foreach (var userRole in userRoles)
-                                {
-                                    claims.Add(new Claim(ClaimTypes.Role, userRole));
+                                    foreach (var userRole in userRoles)
+                                    {
+                                        claims.Add(new Claim(ClaimTypes.Role, userRole));
+                                    }
+
+                                    var token = CreateToken(claims);
+                                    var refreshToken = GenerateRefreshToken();
+
+                                    _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"],
+                                        out int refreshTokenValidityInDays);
+                                    user.RefreshToken = refreshToken;
+                                    user.RefreshTokenExpiryTime = DateTime.Now.AddDays(refreshTokenValidityInDays);
+                                    await _userManager.UpdateAsync(user);
+                                    obj.TokenInfo = new
+                                    {
+                                        Token = new JwtSecurityTokenHandler().WriteToken(token),
+                                        RefreshToken = refreshToken,
+                                        Expiration = token.ValidTo
+                                    };
+                                    obj.status = "SUCCESS";
+                                    obj.branchPath = FindPathOnBranches.branchPath;
+                                    obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
+                                    obj.uid = lookUpAllUserBasedEmailDefault.id;
+                                    obj.references = lookUpAllUserBasedEmailDefault;
+                                    return obj;
                                 }
 
-                                var token = CreateToken(claims);
-                                var refreshToken = GenerateRefreshToken();
-
-                                _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"],
-                                    out int refreshTokenValidityInDays);
-                                user.RefreshToken = refreshToken;
-                                user.RefreshTokenExpiryTime = DateTime.Now.AddDays(refreshTokenValidityInDays);
-                                await _userManager.UpdateAsync(user);
-                                obj.TokenInfo = new
-                                {
-                                    Token = new JwtSecurityTokenHandler().WriteToken(token),
-                                    RefreshToken = refreshToken,
-                                    Expiration = token.ValidTo
-                                };
-                                obj.status = "SUCCESS";
-                                obj.branchPath = FindPathOnBranches.branchPath;
-                                obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
-                                obj.uid = lookUpAllUserBasedEmailDefault.id;
-                                obj.references = lookUpAllUserBasedEmailDefault;
-                                return obj;
+                                return "UNAUTHORIZED";
                             }
-
-                            return "UNAUTHORIZED";
-                        }
-                    }
-                    else
-                    {
-                        return "INVALID_PASSWORD";
-                    }
-                }
-                else
-                {
-                    return "ACCOUNT_DISABLED";
-                }
-            }
-            else
-            {
-                return "ACCOUNT_NOT_EXISTS_ON_THIS_BRANCH";
-            }
-            }
-            else
-            {
-                return "BRANCH_NOT_WORKING";
-            }
-        }
-        }
-        else
-        {
-            // Customer / Client
-              var user = await _userManager.FindByNameAsync(loginParameters.email);
-              
-        var lookUpAllUserBasedEmailDefault = await context.Set<TEntity>()
-            .Where(x => x.email == loginParameters.email ).FirstOrDefaultAsync();
-        
-        dynamic obj = new ExpandoObject();
-        if (string.IsNullOrWhiteSpace(loginParameters.email) || string.IsNullOrWhiteSpace(loginParameters.password))
-        {
-            return "EMPTY";
-        }
-        else
-        {
-            string encryptedPassword =
-                lookUpAllUserBasedEmailDefault == null ? "" : lookUpAllUserBasedEmailDefault.password;
-                if (lookUpAllUserBasedEmailDefault.status == Convert.ToChar("1"))
-                {
-                    if (BCrypt.Net.BCrypt.Verify(loginParameters.password, encryptedPassword))
-                    {
-                        if (lookUpAllUserBasedEmailDefault.branch == loginParameters.branch)
-                        {
-                            if (user != null && await _userManager.CheckPasswordAsync(user, loginParameters.password))
-                            {
-                                var userRoles = await _userManager.GetRolesAsync(user);
-                                var claims = new List<Claim>
-                                {
-                                    new Claim(ClaimTypes.Name, user.UserName),
-                                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                                };
-                                foreach (var userRole in userRoles)
-                                {
-                                    claims.Add(new Claim(ClaimTypes.Role, userRole));
-                                }
-
-                                var token = CreateToken(claims);
-                                var refreshToken = GenerateRefreshToken();
-
-                                _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"],
-                                    out int refreshTokenValidityInDays);
-                                user.RefreshToken = refreshToken;
-                                user.RefreshTokenExpiryTime = DateTime.Now.AddDays(refreshTokenValidityInDays);
-                                await _userManager.UpdateAsync(user);
-                                obj.TokenInfo = new
-                                {
-                                    Token = new JwtSecurityTokenHandler().WriteToken(token),
-                                    RefreshToken = refreshToken,
-                                    Expiration = token.ValidTo
-                                };
-                                obj.status = "SUCCESS";
-                                obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
-                                obj.uid = lookUpAllUserBasedEmailDefault.id;
-                                obj.references = lookUpAllUserBasedEmailDefault;
-                                return obj;
-                            }
-
-                            return "UNAUTHORIZED";
                         }
                         else
                         {
-                            return "NO_ACCOUNT_ON_THIS_BRANCH";
+                            return "INVALID_PASSWORD";
                         }
                     }
                     else
                     {
-                        return "INVALID_PASSWORD";
+                        return "ACCOUNT_DISABLED";
                     }
                 }
                 else
                 {
-                    return "ACCOUNT_DISABLED";
+                    return "ACCOUNT_NOT_EXISTS_ON_THIS_BRANCH";
                 }
-            
+            }
+            else
+            {
+                if (lookUpAllUserBasedEmailDefault.access_level == 3 &&
+                lookUpAllUserBasedEmailDefault.branch == 0)
+                {
+                    if (lookUpAllUserBasedEmailDefault.status == Convert.ToChar("1"))
+                    {
+                        if (BCrypt.Net.BCrypt.Verify(loginParameters.password, encryptedPassword))
+                        {
+                            if (lookUpAllUserBasedEmailDefault.branch == findBranchIdByEmail.branch)
+                            {
+                                if (user != null && await _userManager.CheckPasswordAsync(user, loginParameters.password))
+                                {
+                                    var userRoles = await _userManager.GetRolesAsync(user);
+                                    var claims = new List<Claim>
+                                {
+                                    new Claim(ClaimTypes.Name, user.UserName),
+                                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                                };
+                                    foreach (var userRole in userRoles)
+                                    {
+                                        claims.Add(new Claim(ClaimTypes.Role, userRole));
+                                    }
+
+                                    var token = CreateToken(claims);
+                                    var refreshToken = GenerateRefreshToken();
+
+                                    _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"],
+                                        out int refreshTokenValidityInDays);
+                                    user.RefreshToken = refreshToken;
+                                    user.RefreshTokenExpiryTime = DateTime.Now.AddDays(refreshTokenValidityInDays);
+                                    await _userManager.UpdateAsync(user);
+                                    obj.TokenInfo = new
+                                    {
+                                        Token = new JwtSecurityTokenHandler().WriteToken(token),
+                                        RefreshToken = refreshToken,
+                                        Expiration = token.ValidTo
+                                    };
+                                    obj.status = "SUCCESS";
+                                    obj.branchPath = "/customer/dashboard";
+                                    obj.usertype = lookUpAllUserBasedEmailDefault.access_level;
+                                    obj.uid = lookUpAllUserBasedEmailDefault.id;
+                                    obj.references = lookUpAllUserBasedEmailDefault;
+                                    return obj;
+                                }
+
+                                return "UNAUTHORIZED";
+                            }
+                        }
+                        else
+                        {
+                            return "INVALID_PASSWORD";
+                        }
+                    }
+                    else
+                    {
+                        return "ACCOUNT_DISABLED";
+                    }
+                }
+                else
+                {
+                    return "BRANCH_NOT_WORKING";
+                }
+            }
         }
-        }
-        return "SOMETHING_WENT_WRONG";
+
+        return 200;
     }
 
     public JwtSecurityToken CreateToken(List<Claim> claims)
@@ -380,7 +371,7 @@ where TContext : APIDBContext
             entity.verified = Convert.ToChar("0");
             entity.created_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
             entity.updated_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-            
+
             context.Set<TEntity>().Add(entity);
             await context.SaveChangesAsync();
             return 200;
@@ -424,6 +415,7 @@ where TContext : APIDBContext
         var changePasswordEntity = await context.Set<TEntity>()
             .Where(x => x.email == forgotPasswordParams.email).FirstOrDefaultAsync();
         var core_user = await _userManager.FindByEmailAsync(forgotPasswordParams.email);
+        if (core_user == null) throw new ArgumentNullException(nameof(core_user));
         if (userIdentifierIfAny)
         {
             changePasswordEntity.password = BCrypt.Net.BCrypt.HashPassword(forgotPasswordParams.password);
@@ -436,5 +428,125 @@ where TContext : APIDBContext
         }
 
         return 401;
+    }
+
+    public async Task<dynamic> DeleteUser(int id)
+    {
+        var uamDeleteEntity = await context.Set<TEntity>().Where(x => x.id == id).FirstOrDefaultAsync();
+        if (uamDeleteEntity != null)
+        {
+            context.Set<TEntity>().Remove(uamDeleteEntity);
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 401;
+    }
+
+    public async Task<dynamic> UpdateProfile(UsersParameters entity)
+    {
+
+        var changeSomeDetailsFromUser =
+            await context.UsersEnumerable.Where(x => x.email == entity.email && x.id == entity.id).FirstOrDefaultAsync();
+        var checkEmailRequestToChange = await context.Set<TEntity>()
+            .AnyAsync(x => x.email == entity.email && x.id == entity.id);
+
+        if (changeSomeDetailsFromUser.email == entity.email)
+        {
+            if (BCrypt.Net.BCrypt.Verify(entity.password, changeSomeDetailsFromUser.password))
+            {
+                changeSomeDetailsFromUser.firstname = entity.firstname;
+                changeSomeDetailsFromUser.middlename = entity.middlename;
+                changeSomeDetailsFromUser.lastname = entity.lastname;
+                changeSomeDetailsFromUser.phoneNumber = entity.phoneNumber;
+                changeSomeDetailsFromUser.username = entity.username;
+                changeSomeDetailsFromUser.imgurl = entity.imgurl;
+                var core_user = await _userManager.FindByEmailAsync(entity.email);
+                if (core_user == null) throw new ArgumentNullException(nameof(core_user));
+                if (entity.newPassword != null)
+                {
+                    changeSomeDetailsFromUser.password = BCrypt.Net.BCrypt.HashPassword(entity.newPassword);
+                }
+                var code = await _userManager.GeneratePasswordResetTokenAsync(core_user);
+                var result = await _userManager.ResetPasswordAsync(core_user, code, entity.password);
+                if (!result.Succeeded)
+                    return 401;
+                await context.SaveChangesAsync();
+                dynamic obj = new ExpandoObject();
+                obj.status = 200;
+                obj.forReferences = changeSomeDetailsFromUser;
+                return obj;
+            }
+            else
+            {
+                return 400;
+            }
+        }
+        else
+        {
+            if (checkEmailRequestToChange)
+            {
+                return 409;
+            }
+            else
+            {
+                if (BCrypt.Net.BCrypt.Verify(entity.password, changeSomeDetailsFromUser.password))
+                {
+                    changeSomeDetailsFromUser.firstname = entity.firstname;
+                    changeSomeDetailsFromUser.middlename = entity.middlename;
+                    changeSomeDetailsFromUser.lastname = entity.lastname;
+                    changeSomeDetailsFromUser.phoneNumber = entity.phoneNumber;
+                    changeSomeDetailsFromUser.username = entity.username;
+                    changeSomeDetailsFromUser.imgurl = entity.imgurl;
+                    var core_user = await _userManager.FindByEmailAsync(entity.email);
+                    if (core_user == null) throw new ArgumentNullException(nameof(core_user));
+                    if (entity.newPassword != null)
+                    {
+                        changeSomeDetailsFromUser.password = BCrypt.Net.BCrypt.HashPassword(entity.newPassword);
+                    }
+                    var code = await _userManager.GeneratePasswordResetTokenAsync(core_user);
+                    var result = await _userManager.ResetPasswordAsync(core_user, code, entity.password);
+                    if (!result.Succeeded)
+                        return 401;
+                    await context.SaveChangesAsync();
+                    dynamic obj = new ExpandoObject();
+                    obj.status = 201;
+                    obj.forReferences = changeSomeDetailsFromUser;
+                    return obj;
+                }
+                else
+                {
+                    return 400;
+                }
+            }
+        }
+    }
+
+    public async Task<List<TEntity>> FilterByAccessLevel(int access_level)
+    {
+        var accessLevelFiltered = await context.Set<TEntity>().Where(x => x.access_level == access_level).ToListAsync();
+        return accessLevelFiltered;
+    }
+
+    class ForgeBranches
+    {
+        public int branch_id { get; set; }
+        public string serviceBranch { get; set; }
+    }
+    public async Task<List<Model.Services>> FilterServicesByBranch(int branch_id)
+    {
+        var entityToBeUpdate = await context.ServicesEnumerable.Where(x => x.serviceStatus == 1)
+            .ToListAsync();
+        for (int x = 0; x < entityToBeUpdate.Count; x++)
+        {
+            Model.Services forges = entityToBeUpdate[x];
+            foreach (var entity in entityToBeUpdate)
+            {
+                List<ForgeBranches> forgeEntity = JsonSerializer.Deserialize<List<ForgeBranches>>(forges.serviceBranch);
+                var listServices = await context.ServicesEnumerable.Where(x => forgeEntity.Select(mc => mc.branch_id).Contains(branch_id)).ToListAsync();
+                return listServices;
+            }
+        }
+        return entityToBeUpdate;
     }
 }

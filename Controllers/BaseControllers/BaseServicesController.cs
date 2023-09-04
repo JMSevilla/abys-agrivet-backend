@@ -31,4 +31,11 @@ where TRepository : ServicesRepository<TEntity>
         var result = await _repository.GetAllServices();
         return Ok(result);
     }
+
+    [Route("delete-service/{id}"), HttpDelete]
+    public async Task<IActionResult> DeleteService([FromRoute] int id)
+    {
+        var result = await _repository.DeleteService(id);
+        return Ok(result);
+    }
 }

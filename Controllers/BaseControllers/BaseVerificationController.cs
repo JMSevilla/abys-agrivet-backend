@@ -41,4 +41,17 @@ where TRepository : VerificationRepository<TEntity>
       var result = await _repository.SMSResendVerificationCode(type, email);
       return Ok(result);
    }
+
+   [Route("reminder-system/{type}/{id}/{email}/{phoneNumber}"), HttpPut]
+   public async Task<IActionResult> ReminderSystem([FromRoute] int type, [FromRoute] int id, [FromRoute] string email,
+      [FromRoute] string phoneNumber)
+   {
+      var result = await _repository.ReminderSystem(
+         type,
+         id,
+         email,
+         phoneNumber
+      );
+      return Ok(result);
+   }
 }

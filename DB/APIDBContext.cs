@@ -7,7 +7,7 @@ namespace abys_agrivet_backend.DB;
 public class APIDBContext : IdentityDbContext<JWTIdentity>
 {
     //
-    public APIDBContext(DbContextOptions<APIDBContext> options) : base(options) {}
+    public APIDBContext(DbContextOptions<APIDBContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -18,6 +18,8 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
         // builder.Ignore<Model.Services>();
         // builder.Ignore<Schedule>();
         // builder.Ignore<Appointment>();
+        // builder.Ignore<FollowUpAppointment>();
+        // builder.Ignore<Lobby>();
     }
     public DbSet<Users> UsersEnumerable { get; set; }
     public DbSet<Branch> Branches { get; set; }
@@ -26,4 +28,5 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<FollowUpAppointment> FollowUpAppointments { get; set; }
+    public DbSet<Lobby> Lobbies { get; set; }
 }

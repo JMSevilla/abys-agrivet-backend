@@ -21,6 +21,18 @@ builder.Services.AddDbContext<APIDBContext>(options =>
         providerOptions => providerOptions.EnableRetryOnFailure())
 );
 
+var passwordOptions = new PasswordOptions
+{
+    RequireDigit = false,
+    RequiredLength = 6,
+    RequireLowercase = false,
+    RequireNonAlphanumeric = false,
+    RequireUppercase = false
+};
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password = passwordOptions;
+});
 builder.Services.AddIdentity<JWTIdentity, IdentityRole>()
     .AddEntityFrameworkStores<APIDBContext>()
     .AddDefaultTokenProviders();

@@ -1,6 +1,7 @@
 ﻿using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.LoginParams;
+using abys_agrivet_backend.Helper.UsersProps;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.UsersRepository;
 using Microsoft.AspNetCore.Authorization;
@@ -86,6 +87,34 @@ where TRepository : UsersRepository<TEntity>
     public async Task<IActionResult> ChangePassword([FromBody] ForgotPasswordParams forgotPasswordParams)
     {
         var result = await _repository.ChangePassword(forgotPasswordParams);
+        return Ok(result);
+    }
+
+    [Route("uam-delete-user/{id}"), HttpDelete]
+    public async Task<IActionResult> UAMDeleteUser([FromRoute] int id)
+    {
+        var result = await _repository.DeleteUser(id);
+        return Ok(result);
+    }
+
+    [Route("update-profile-user"), HttpPut]
+    public async Task<IActionResult> UpdateUserProfile([FromBody] UsersParameters usersParameters)
+    {
+        var result = await _repository.UpdateProfile(usersParameters);
+        return Ok(result);
+    }
+
+    [Route("filter-uam-by-accesslevel/{access_level}"), HttpGet]
+    public async Task<IActionResult> FilteredAccessLevel([FromRoute] int access_level)
+    {
+        var result = await _repository.FilterByAccessLevel(access_level);
+        return Ok(result);
+    }
+
+    [Route("filter-services/{branch_id}"), HttpGet]
+    public async Task<IActionResult> FilterServices([FromRoute] int branch_id)
+    {
+        var result = await _repository.FilterServicesByBranch(branch_id);
         return Ok(result);
     }
 }

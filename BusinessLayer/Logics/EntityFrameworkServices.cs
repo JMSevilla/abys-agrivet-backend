@@ -28,4 +28,17 @@ where TContext : APIDBContext
     {
         return await context.Set<TEntity>().ToListAsync();
     }
+
+    public async Task<dynamic> DeleteService(int id)
+    {
+        var deleteEntity = await context.Set<TEntity>().Where(x => x.id == id).FirstOrDefaultAsync();
+        if (deleteEntity != null)
+        {
+            context.Set<TEntity>().Remove(deleteEntity);
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 401;
+    }
 }

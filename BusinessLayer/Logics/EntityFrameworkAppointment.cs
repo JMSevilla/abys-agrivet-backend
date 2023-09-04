@@ -5,9 +5,11 @@ using abys_agrivet_backend.Helper.MailSettings;
 using abys_agrivet_backend.Helper.Schedule;
 using abys_agrivet_backend.Helper.SearchEngine;
 using abys_agrivet_backend.Helper.SessionActions;
+using abys_agrivet_backend.Helper.VerificationCodeGenerator;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Model;
 using abys_agrivet_backend.Repository.Appointment;
+using abys_agrivet_backend.Services;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -15,15 +17,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace abys_agrivet_backend.BusinessLayer.Logics;
 
 public abstract class EntityFrameworkAppointment<TEntity, TContext> : AppointmentRepository<TEntity>
-where TEntity : class, IAppointment
-where TContext : APIDBContext
+    where TEntity : class, IAppointment
+    where TContext : APIDBContext
 {
     private readonly TContext context;
     private readonly MailSettings _mailSettings;
+
     public EntityFrameworkAppointment(TContext context, IOptions<MailSettings> mailSettings)
     {
         this.context = context;
@@ -51,26 +55,215 @@ where TContext : APIDBContext
         await smtp.SendAsync(mail);
         smtp.Disconnect(true);
     }
-    public async Task<TEntity> makeAnAppointment(TEntity entity)
+
+    class AppointmentEntity
     {
-        if (entity.reminderType == 1)
+        public int id { get; set; }
+    }
+
+    class ScheduleEntity
+    {
+        public int id { get; set; }
+    }
+
+    public async Task<dynamic> AppointmentMakeItDone(int id, int deletionId)
+    {
+        var updateEntity = await context.Set<TEntity>().Where(x => x.id == id)
+            .FirstOrDefaultAsync();
+        AppointmentEntity[] entites = JsonSerializer.Deserialize<AppointmentEntity[]>(updateEntity.appointmentSchedule);
+        foreach (AppointmentEntity entity in entites)
         {
-            /*email service from smtp*/
-            SendAppointmentEmailSMTPTWithoutCode(entity.email, "Thank you for making an appointment we will notify you ahead of time");
-            await context.Set<TEntity>().AddAsync(entity);
+            var schedule = await context.Schedules.Where(x => x.id == deletionId).FirstOrDefaultAsync();
+            if (updateEntity != null)
+            {
+                schedule.status = 0;
+                updateEntity.status = 2;
+                updateEntity.archive_indicator = DateTime.Today;
+                await context.SaveChangesAsync();
+                return 200;
+            }
+        }
+
+        return 201;
+    }
+
+    class GSched
+    {
+        public int id { get; set; }
+        public DateTime start { get; set; }
+        public DateTime end { get; set; }
+        public string title { get; set; }
+        public bool isHoliday { get; set; }
+    }
+
+    public async Task<dynamic> BringAppointmentToLobby(Lobby lobby)
+    {
+        GSched[]? scheds = JsonSerializer.Deserialize<GSched[]>(lobby.appointmentSchedule);
+        if (lobby != null)
+        {
+            var checkWalkedInCustomerIfHasAccount = await context.UsersEnumerable.AnyAsync(
+                x => x.email == lobby.email);
+            if (checkWalkedInCustomerIfHasAccount)
+            {
+                var checkWalkedInUserInformation = await context.UsersEnumerable.Where(x => x.email == lobby.email)
+                    .FirstOrDefaultAsync();
+                await context.Lobbies.AddAsync(lobby);
+                await context.SaveChangesAsync();
+                return 200;
+            }
+            else
+            {
+
+                await context.Lobbies.AddAsync(lobby);
+                await context.SaveChangesAsync();
+                return 200;
+            }
+        }
+
+        return 201;
+    }
+
+    public async Task<List<Lobby>> FindAllLobbies(int branch_id)
+    {
+        var result = await context.Lobbies.Where(x => x.branch_id == branch_id && x.isWalkedIn == 1).ToListAsync();
+        return result;
+    }
+
+    public async Task<dynamic> DeleteWhenProceedFromLobby(int id)
+    {
+        var result = await context.Lobbies.FindAsync(id);
+        if (result != null)
+        {
+            context.Lobbies.Remove(result);
             await context.SaveChangesAsync();
-            return entity;
+            return 200;
+        }
+
+        return 405;
+    }
+
+    public async Task<dynamic> makeAnAppointment(TEntity entity)
+    {
+        var smsProvider = new SMSTwilioService();
+        var code = GenerateVerificationCode.GenerateCode();
+        if (entity != null)
+        {
+            GSched[]? schedules = JsonSerializer.Deserialize<GSched[]>(entity.appointmentSchedule);
+            if (entity.isWalkedIn == 1)
+            {
+                var checkWalkedInCustomerIfHasAccount = await context.UsersEnumerable.AnyAsync(
+                    x => x.email == entity.email);
+                if (checkWalkedInCustomerIfHasAccount)
+                {
+                    var checkWalkedInUserInformation = await context.UsersEnumerable.Where(x => x.email == entity.email)
+                        .FirstOrDefaultAsync();
+                    foreach (GSched schedule in schedules)
+                    {
+                        if (entity.reminderType == 1)
+                        {
+                            SendAppointmentEmailSMTPTWithoutCode(entity.email,
+                                "Thank you for making an appointment we will notify you ahead of time");
+                        }
+                        else
+                        {
+                            smsProvider.SendSMSService(
+                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                            );
+                        }
+
+                        Schedule scheduleprops = new Schedule();
+                        scheduleprops.userid = checkWalkedInUserInformation.id;
+                        scheduleprops.branch = entity.branch_id;
+                        scheduleprops.mockSchedule = entity.appointmentSchedule;
+                        scheduleprops.status = 1;
+                        scheduleprops.isHoliday = 0;
+                        scheduleprops.start = Convert.ToDateTime(schedule.start).ToLocalTime();
+                        scheduleprops.title = schedule.title;
+                        scheduleprops.end = schedule.end.AddDays(1);
+                        entity.created_at = Convert.ToDateTime(schedule.start).ToLocalTime();
+                        entity.updated_at = schedule.end.AddDays(1);
+                        entity.archive_indicator = DateTime.Today;
+                        await context.Schedules.AddAsync(scheduleprops);
+                        await context.Set<TEntity>().AddAsync(entity);
+                        await context.SaveChangesAsync();
+                        return 200;
+                    }
+
+                    return 200;
+                }
+                else
+                {
+                    foreach (GSched schedule in schedules)
+                    {
+                        if (entity.reminderType == 1)
+                        {
+                            SendAppointmentEmailSMTPTWithoutCode(entity.email,
+                                "Thank you for making an appointment we will notify you ahead of time");
+                        }
+                        else
+                        {
+                            smsProvider.SendSMSService(
+                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                            );
+                        }
+                        Schedule scheduleprops = new Schedule();
+                        scheduleprops.userid = 0;
+                        scheduleprops.branch = entity.branch_id;
+                        scheduleprops.mockSchedule = entity.appointmentSchedule;
+                        scheduleprops.status = 1;
+                        scheduleprops.isHoliday = 0;
+                        scheduleprops.start = Convert.ToDateTime(schedule.start).ToLocalTime();
+                        scheduleprops.title = schedule.title;
+                        scheduleprops.end = schedule.end.AddDays(1);
+                        entity.created_at = Convert.ToDateTime(schedule.start).ToLocalTime();
+                        entity.updated_at = schedule.end.AddDays(1);
+                        entity.archive_indicator = DateTime.Today;
+                        await context.Schedules.AddAsync(scheduleprops);
+                        await context.Set<TEntity>().AddAsync(entity);
+                        await context.SaveChangesAsync();
+                        return 200;
+                    }
+
+                    return 200;
+                }
+            }
+            else
+            {
+                if (entity.reminderType == 1)
+                {
+                    /*email service from smtp*/
+                    SendAppointmentEmailSMTPTWithoutCode(entity.email,
+                        "Thank you for making an appointment we will notify you ahead of time");
+                    entity.created_at = entity.created_at.AddDays(1);
+                    entity.updated_at = entity.updated_at.AddDays(1);
+                    entity.archive_indicator = DateTime.Today;
+                    await context.Set<TEntity>().AddAsync(entity);
+                    await context.SaveChangesAsync();
+                    return 200;
+                }
+                else
+                {
+                    smsProvider.SendSMSService(
+                        "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                    );
+                    entity.created_at = entity.created_at.AddDays(1);
+                    entity.updated_at = entity.updated_at.AddDays(1);
+                    entity.archive_indicator = DateTime.Today;
+                    await context.Set<TEntity>().AddAsync(entity);
+                    await context.SaveChangesAsync();
+                    return 200;
+                }
+            }
         }
         else
         {
-            return entity;
+            return 200;
         }
     }
 
     public async Task<dynamic> createSchedule(Schedule schedule)
     {
         var checkDay = await context.Schedules.AnyAsync(x => x.start == schedule.start);
-        var identifier = await context.Schedules.AnyAsync(x => x.start == schedule.start);
         if (checkDay)
         {
             return "already_scheduled";
@@ -87,7 +280,11 @@ where TContext : APIDBContext
 
     public async Task<dynamic> GetAllSchedulePerBranch(int branch)
     {
-        var getAllSchedule = await context.Schedules.Where(x => x.branch == branch || x.isHoliday == 1 || x.status == 0)
+        int[] holidays = new[] { 1, 0, 2 };
+        int[] statuses = new[] { 1, 0 };
+        int[] branchesAccepted = new[] { 1, 2, 3, 4, 5, 6 };
+        var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
+                && statuses.Contains(x.status ?? 0))
             .Select(t => new
             {
                 t.id,
@@ -137,10 +334,9 @@ where TContext : APIDBContext
 
     public async Task<dynamic> NotifyBeforeExactDate()
     {
-        DateTime currentDate = DateTime.Now.Date;
-        DateTime currentDateMinusOneDay = currentDate.AddDays(1);
-        var getAllFromAppointment = await context.Schedules.Where(
-            x => x.start == currentDateMinusOneDay
+        DateTime tomorrow = DateTime.Today.AddDays(1);
+        var getAllFromAppointment = await context.Set<TEntity>().Where(
+            x => x.created_at.Date == tomorrow.Date
         ).ToListAsync();
         return getAllFromAppointment;
     }
@@ -150,7 +346,7 @@ where TContext : APIDBContext
         int startIndex = start.IndexOf(" ", StringComparison.Ordinal) + 1;
         int endIndex = start.IndexOf(" GMT", StringComparison.Ordinal);
         string dateTimeString = start.Substring(startIndex, endIndex - startIndex);
-        
+
         int startIndexForEnd = end.IndexOf(" ", StringComparison.Ordinal) + 1;
         int endIndexForEnd = end.IndexOf(" GMT", StringComparison.Ordinal);
         string dateTimeStringForEnd = end.Substring(startIndexForEnd, endIndexForEnd - startIndexForEnd);
@@ -158,9 +354,47 @@ where TContext : APIDBContext
         DateTimeOffset startdateTime = DateTimeOffset.Parse(dateTimeString);
         DateTimeOffset enddateTime = DateTimeOffset.Parse(dateTimeStringForEnd);
         var affectedSchedules = await context.Schedules.Where(
-            x => x.start >= startdateTime && x.start <= enddateTime.AddDays(1)
+            x => x.start == startdateTime && x.isHoliday == 0 && x.status == 1
         ).ToListAsync();
         return affectedSchedules;
+    }
+    public async Task<dynamic> CheckHolidaysSchedules(string start, string end)
+    {
+        int startIndex = start.IndexOf(" ", StringComparison.Ordinal) + 1;
+        int endIndex = start.IndexOf(" GMT", StringComparison.Ordinal);
+        string dateTimeString = start.Substring(startIndex, endIndex - startIndex);
+
+        DateTimeOffset startdateTime = DateTimeOffset.Parse(dateTimeString);
+        var affectedSchedules = await context.Schedules.Where(
+            x => x.start.Date == startdateTime.Date && x.isHoliday == 1 && x.status == 1
+        ).ToListAsync();
+        return affectedSchedules;
+    }
+
+    public async Task<dynamic> CheckSavedEventOnDB(int id)
+    {
+        var checkEvent = await context.Schedules.AnyAsync(x => x.id == id);
+        if (checkEvent)
+        {
+            return 200;
+        }
+        else
+        {
+            return 201;
+        }
+    }
+
+    public async Task<dynamic> CancelAppointmentLobby(int id)
+    {
+        var lobbyEntity = await context.Lobbies.Where(x => x.id == id).FirstOrDefaultAsync();
+        if (lobbyEntity != null)
+        {
+            context.Lobbies.Remove(lobbyEntity);
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 200;
     }
 
     public async Task<dynamic> PostNewHoliday(Schedule schedule)
@@ -184,7 +418,8 @@ where TContext : APIDBContext
             if (checkIfHoliday.isHoliday == 1)
             {
                 return 200;
-            } else if (checkIfHoliday.status == 0)
+            }
+            else if (checkIfHoliday.isHoliday == 2)
             {
                 return 202;
             }
@@ -202,7 +437,9 @@ where TContext : APIDBContext
         if (getUserByUserId.access_level == 3)
         {
             // send email to remind customer of deletion of his/her schedule
-            SendAppointmentEmailSMTPTWithoutCode(getUserByUserId.email, "Your schedule for" + " " + findAllSchedulesById.start.ToString("MMMM dd, yyyy dddd") + " " + "has been removed due to administrator holiday or closed drop schedule.");
+            SendAppointmentEmailSMTPTWithoutCode(getUserByUserId.email,
+                "Your schedule for" + " " + findAllSchedulesById.start.ToString("MMMM dd, yyyy dddd") + " " +
+                "has been removed due to administrator holiday or closed drop schedule.");
             if (findAllSchedulesById != null)
             {
                 context.Schedules.Remove(findAllSchedulesById);
@@ -228,27 +465,125 @@ where TContext : APIDBContext
     public async Task<dynamic> getAllAppointmentPerBranch(int branch_id)
     {
         var findAllAppointmentsBasedOnBranch = await context.Set<TEntity>()
-            .Where(x => x.branch_id == branch_id && x.status == 1 ).ToListAsync();
+            .Where(x => x.branch_id == branch_id && x.status == 1 && x.isWalkedIn == 0).ToListAsync();
         return findAllAppointmentsBasedOnBranch;
     }
 
-  
+    public async Task<dynamic> getAllWalkedInPerBranch(int branch_id)
+    {
+        var findAllAppointmentsBasedOnBranch = await context.Set<TEntity>()
+            .Where(x => x.branch_id == branch_id && x.status == 1 && x.isWalkedIn == 1).ToListAsync();
+        return findAllAppointmentsBasedOnBranch;
+    }
+
     public async Task<dynamic> getTodaysAppointment(int branch_id)
     {
         var getTodaysAppointment = await context.Set<TEntity>().Where(x => x.branch_id == branch_id
-                                                                           && x.created_at.Date == DateTime.Today)
+                                                                           && x.created_at.Date == DateTime.Today &&
+                                                                           x.isWalkedIn == 0)
             .ToListAsync();
         return getTodaysAppointment;
     }
 
     public async Task<dynamic> CountSessionDone(int branch_id, int id)
     {
-        var result = await context.FollowUpAppointments.Where(x =>  x.branch_id == branch_id).FirstOrDefaultAsync();
-        return result.isSessionStarted;
+        int[] sessionStatuses = new[] { 1, 2, 0 };
+        var result = await context.FollowUpAppointments.CountAsync(x =>
+            sessionStatuses.Contains(x.isSessionStarted ?? 0) && x.branch_id == branch_id && x.id == id);
+        return result;
     }
+
+    public async Task<int> countAppointments(int branch_id, string type)
+    {
+        switch (type)
+        {
+            case "appointments_count":
+                var result = await context.Set<TEntity>().CountAsync(x => x.isWalkedIn == 0);
+                return result;
+            case "todays_appointments":
+                var todayCount = await context.Set<TEntity>().CountAsync(x => x.created_at.Date == DateTime.Today);
+                return todayCount;
+            case "done_appointments":
+                var doneCounts = await context.Set<TEntity>().CountAsync(x => x.status == 2);
+                return doneCounts;
+            case "walkin_appointments":
+                var walkin = await context.Set<TEntity>().CountAsync(x => x.isWalkedIn == 1);
+                return walkin;
+        }
+
+        return 200;
+    }
+
+    public async Task<int> CountAdminDashboardCountable(string type)
+    {
+        int[] managers = new[] { 1, 2, 3, 4, 5 };
+        switch (type)
+        {
+            case "managers":
+                var managersCount = await context.UsersEnumerable.CountAsync(x => managers.Contains(x.branch));
+                return managersCount;
+            case "customers":
+                var customersCount = await context.UsersEnumerable.CountAsync(x => x.branch == 0);
+                return customersCount;
+            case "branches":
+                var branchCount = await context.Branches.CountAsync();
+                return branchCount;
+            case "appointments":
+                var doneAppointmentCount = await context.Set<TEntity>().CountAsync(x => x.status == 2);
+                return doneAppointmentCount;
+        }
+
+        return 200;
+    }
+    public async Task<int> countAppointmentsCardCustomer(string type, string email)
+    {
+        switch (type)
+        {
+            case "appointments":
+                var findAppointments = await context.Set<TEntity>().CountAsync(x => x.email == email);
+                return findAppointments;
+            case "inprogress-appointments":
+                var inProgressAppointments = await context.Set<TEntity>()
+                    .CountAsync(x => x.isSessionStarted == 1 && x.email == email);
+                return inProgressAppointments;
+            case "done-appointments":
+                var doneAppointments = await context.Set<TEntity>()
+                    .CountAsync(x => x.email == email && x.status == 2);
+                return doneAppointments;
+        }
+
+        return 200;
+    }
+    public async Task<dynamic> FindAppointmentsByEmail(string email)
+    {
+        var appointmentByEmail = await context.Set<TEntity>().Where(x => x.email == email && x.status == 2).ToListAsync();
+        return appointmentByEmail;
+    }
+
+
+
+    public async Task<dynamic> FindRecordManagementPerBranch(int branch_id)
+    {
+        var result = await context.Set<TEntity>().Where(x => x.status == 2 && x.branch_id == branch_id).ToListAsync();
+        return result;
+    }
+
+    public async Task<dynamic> findUserByManagerId(int manager_id)
+    {
+        var result = await context.UsersEnumerable.Where(x => x.id == manager_id).FirstOrDefaultAsync();
+        return result;
+    }
+
+    public async Task<dynamic> FindFollowUpsOnRecordManagement(int id)
+    {
+        var gained = await context.FollowUpAppointments.Where(x => x.id == id).ToListAsync();
+        return gained;
+    }
+
 
     public async Task<dynamic> createFollowUpAppointment(FollowUpAppointment followUpAppointment)
     {
+        var smsProvider = new SMSTwilioService();
         var updateEntity = await context.Set<TEntity>().Where(x => x.id == followUpAppointment.id)
             .FirstOrDefaultAsync();
         if (followUpAppointment.start <= DateTime.Today || followUpAppointment.end <= DateTime.Today)
@@ -257,12 +592,21 @@ where TContext : APIDBContext
         }
         else
         {
+            followUpAppointment.start = followUpAppointment.start.AddDays(1);
+            followUpAppointment.end = followUpAppointment.end.AddDays(1);
             await context.FollowUpAppointments.AddAsync(followUpAppointment);
             await context.SaveChangesAsync();
             if (followUpAppointment.notificationType == "email")
             {
                 SendAppointmentEmailSMTPTWithoutCode(updateEntity.email, "You have a follow-up appointment on " + " " + followUpAppointment.start.ToString("MMMM dd, yyyy dddd") + "." + "Kindly please attend.");
-            } // add else condition if there is an sms service..
+            }
+            else
+            {
+                smsProvider.SendSMSService(
+                    "You have a follow-up appointment on " + " " + followUpAppointment.start.ToString("MMMM dd, yyyy dddd") + "." + "Kindly please attend.",
+                    "+63" + updateEntity.phoneNumber
+                );
+            }
             return 200;
         }
     }
@@ -281,6 +625,8 @@ where TContext : APIDBContext
     public async Task<dynamic> AppointmentSession(SessionActions sessionActions)
     {
         var startSession = await context.Set<TEntity>().Where(x => x.id == sessionActions.id).FirstOrDefaultAsync();
+        var deleteEntity = await context.Set<TEntity>().Where(x => x.id == sessionActions.id)
+            .FirstOrDefaultAsync();
         switch (sessionActions.actions)
         {
             case "start":
@@ -292,11 +638,30 @@ where TContext : APIDBContext
                 startSession.isSessionStarted = 2;
                 await context.SaveChangesAsync();
                 return 202;
+            case "cancel_appointment":
+                ScheduleEntity[] entites = JsonSerializer.Deserialize<ScheduleEntity[]>(deleteEntity.appointmentSchedule);
+                if (deleteEntity != null)
+                {
+                    foreach (ScheduleEntity entity in entites)
+                    {
+                        var scheduleDeletion =
+                            await context.Schedules.Where(x => x.id == sessionActions.deletionId).FirstOrDefaultAsync();
+                        if (scheduleDeletion != null)
+                        {
+                            context.Schedules.Remove(scheduleDeletion);
+                            context.Set<TEntity>().Remove(deleteEntity);
+                            await context.SaveChangesAsync();
+                            return 200;
+                        }
+                    }
+                }
+
+                return 203;
         }
 
         return 200;
     }
-    
+
     public async Task<dynamic> GetAssignedSessionUsers(int manageruid)
     {
         var result = await context.UsersEnumerable.Where(x => x.id == manageruid)
@@ -304,19 +669,8 @@ where TContext : APIDBContext
         return result;
     }
 
-    public async Task<dynamic> AppointmentMakeItDone(int id)
-    {
-        var updateEntity = await context.Set<TEntity>().Where(x => x.id == id)
-            .FirstOrDefaultAsync();
-        if (updateEntity != null)
-        {
-            updateEntity.status = 2;
-            await context.SaveChangesAsync();
-            return 200;
-        }
 
-        return 201;
-    }
+
 
     public async Task<dynamic> FollowUpAppointmentsList(int branch_id, int appointmentId)
     {
@@ -332,19 +686,20 @@ where TContext : APIDBContext
         {
             searchQuery = searchQuery.Where(o => o.customerName.Contains(customerName));
             return searchQuery;
-        } else if (string.IsNullOrEmpty(customerName) || customerName.Contains("null"))
+        }
+        else if (string.IsNullOrEmpty(customerName) || customerName.Contains("null"))
         {
             int startIndex = start.IndexOf(" ", StringComparison.Ordinal) + 1;
             int endIndex = start.IndexOf(" GMT", StringComparison.Ordinal);
             string dateTimeString = start.Substring(startIndex, endIndex - startIndex);
-        
+
             int startIndexForEnd = end.IndexOf(" ", StringComparison.Ordinal) + 1;
             int endIndexForEnd = end.IndexOf(" GMT", StringComparison.Ordinal);
             string dateTimeStringForEnd = end.Substring(startIndexForEnd, endIndexForEnd - startIndexForEnd);
 
             DateTimeOffset startdateTime = DateTimeOffset.Parse(dateTimeString);
             DateTimeOffset enddateTime = DateTimeOffset.Parse(dateTimeStringForEnd);
-            
+
             searchQuery = searchQuery.Where(o => o.start >= startdateTime.Date && o.start <= enddateTime.Date.AddDays(1));
             return searchQuery;
         }
@@ -353,15 +708,15 @@ where TContext : APIDBContext
             int startIndex = start.IndexOf(" ", StringComparison.Ordinal) + 1;
             int endIndex = start.IndexOf(" GMT", StringComparison.Ordinal);
             string dateTimeString = start.Substring(startIndex, endIndex - startIndex);
-        
+
             int startIndexForEnd = end.IndexOf(" ", StringComparison.Ordinal) + 1;
             int endIndexForEnd = end.IndexOf(" GMT", StringComparison.Ordinal);
             string dateTimeStringForEnd = end.Substring(startIndexForEnd, endIndexForEnd - startIndexForEnd);
 
             DateTimeOffset startdateTime = DateTimeOffset.Parse(dateTimeString);
             DateTimeOffset enddateTime = DateTimeOffset.Parse(dateTimeStringForEnd);
-        
-        
+
+
             searchQuery = searchQuery.Where(o => o.customerName.Contains(customerName) && o.start.Date >= startdateTime && o.start <= enddateTime.Date.AddDays(1));
             return searchQuery;
         }
@@ -370,6 +725,8 @@ where TContext : APIDBContext
     public async Task<dynamic> FollowUpAppointmentSession(FollowUpSessionActions followUpSessionActions)
     {
         var sessionManagement = await context.FollowUpAppointments.Where(x => x.followupId == followUpSessionActions.id)
+            .FirstOrDefaultAsync();
+        var deleteEntity = await context.Set<TEntity>().Where(x => x.id == followUpSessionActions.id)
             .FirstOrDefaultAsync();
         switch (followUpSessionActions.actions)
         {
@@ -386,9 +743,38 @@ where TContext : APIDBContext
                 sessionManagement.isSessionStarted = 3;
                 await context.SaveChangesAsync();
                 return 202;
+            case "cancel_appointment":
+                if (deleteEntity != null)
+                {
+                    context.Set<TEntity>().Remove(deleteEntity);
+                    await context.SaveChangesAsync();
+                    return 200;
+                }
+
+                return 202;
         }
 
         return 202;
     }
 
+    public async Task<List<TEntity>> FilterRecordsByBranch(int branch_id)
+    {
+        var filtered = await context.Set<TEntity>().Where(
+            x => x.branch_id == branch_id
+        ).ToListAsync();
+        return filtered;
+    }
+
+    public async Task<dynamic> UpdateStatusToArchiveAppointment(int id)
+    {
+        var updateToArchive = await context.Set<TEntity>()
+        .Where(x => x.id == id).FirstOrDefaultAsync();
+        if (updateToArchive != null)
+        {
+            updateToArchive.status = 3;
+            await context.SaveChangesAsync();
+            return 200;
+        }
+        return 400;
+    }
 }

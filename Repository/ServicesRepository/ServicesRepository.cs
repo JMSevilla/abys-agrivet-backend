@@ -6,4 +6,5 @@ public interface ServicesRepository<T> where T: class, IServices
 {
     public Task<T> CreateNewServices(T entity);
     public Task<List<T>> GetAllServices();
+    public Task<dynamic> DeleteService(int id);
 }

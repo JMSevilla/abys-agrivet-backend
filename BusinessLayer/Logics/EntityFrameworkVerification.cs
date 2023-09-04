@@ -27,6 +27,8 @@ where TContext : APIDBContext
     {
         var checkSentCount = await context.Set<TEntity>().Where(x => x.email == entity.email && x.isValid == 1).FirstOrDefaultAsync();
         var checkVerificationProfile = await context.Set<TEntity>().AnyAsync(x => x.email == entity.email && x.isValid == 1);
+        var updateEntityVerification = await context.Set<TEntity>()
+            .Where(x => x.email == entity.email && x.isValid == 1).FirstOrDefaultAsync();
         var smsProvider = new SMSTwilioService();
         if (entity.type == "sms")
         {
@@ -38,16 +40,15 @@ where TContext : APIDBContext
                 }
                 else
                 {
-                    entity.code = GenerateVerificationCode.GenerateCode();
-                    entity.isValid = 1;
-                    entity.resendCount = checkSentCount.resendCount + 1;
-                    entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                    entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                    //smsProvider.SendSMSService(
-                    //""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
-                    //);
-                    context.Set<TEntity>().Add(entity);
+                    string code = GenerateVerificationCode.GenerateCode();
+                    updateEntityVerification.code = code;
+                    updateEntityVerification.resendCount = updateEntityVerification.resendCount + 1;
+                    updateEntityVerification.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                    updateEntityVerification.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                     await context.SaveChangesAsync();
+                    smsProvider.SendSMSService(
+                        ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
+                    );
                     return 200;
                 }
             }
@@ -58,9 +59,9 @@ where TContext : APIDBContext
                 entity.resendCount = 1;
                 entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                 entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                 //smsProvider.SendSMSService(
-                    //""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
-                //);
+                 smsProvider.SendSMSService(
+                    ""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
+                );
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
                 return 200;
@@ -76,14 +77,12 @@ where TContext : APIDBContext
                 }
                 else
                 {
-                    entity.code = GenerateVerificationCode.GenerateCode();
-                    entity.isValid = 1;
-                    entity.resendCount = checkSentCount.resendCount + 1;
-                    entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                    entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                    SendEmailSMTPWithCode(entity.email, entity.code,
+                    updateEntityVerification.code = GenerateVerificationCode.GenerateCode();
+                    updateEntityVerification.resendCount = updateEntityVerification.resendCount + 1;
+                    updateEntityVerification.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                    updateEntityVerification.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                    SendEmailSMTPWithCode(entity.email, updateEntityVerification.code,
                         "Kindly use this code for forgot password request.");
-                    context.Set<TEntity>().Add(entity);
                     await context.SaveChangesAsync();
                     return 200;
                 }
@@ -104,6 +103,30 @@ where TContext : APIDBContext
         }
     }
 
+    public async Task<dynamic> ReminderSystem(int type, int id, string email, string phoneNumber)
+    {
+        var updateNotify = await context.Appointments.Where(x => x.id == id).FirstOrDefaultAsync();
+        var smsProvider = new SMSTwilioService();
+        if (type == 1)
+        {
+            updateNotify.notify = 1;
+            SendWelcomeEmailSMTPWithoutCode(email,
+                "We would like to remind you about your appointment tomorrow. Please go to the vet");
+            await context.SaveChangesAsync();
+            return 200;
+        }
+        else
+        {
+            updateNotify.notify = 1;
+            smsProvider.SendSMSService(
+                "We would like to remind you about your appointment tomorrow. Please go to the vet.", "+63" + phoneNumber
+            );
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 400;
+    }
     public async Task<dynamic> SMSCheckVerificationCode(string code, string email, string? type = "account_activation")
     {
         var verifyCode =
@@ -113,7 +136,7 @@ where TContext : APIDBContext
         var findUserByEmail =
             await context.UsersEnumerable.AnyAsync(x => x.email == email && x.verified == Convert.ToChar("0"));
         var getUserDataByEmail = await context.UsersEnumerable
-            .Where(x => x.email == email && x.verified == Convert.ToChar("0")).FirstOrDefaultAsync();
+            .Where(x => x.email == email).FirstOrDefaultAsync();
         
         var findfpuser = await context.UsersEnumerable.AnyAsync(x => x.email == email);
         if (verifyCode)
@@ -167,9 +190,9 @@ where TContext : APIDBContext
             else
             {
                 var code = GenerateVerificationCode.GenerateCode();
-                //smsProvider.SendSMSService(
-                //""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
-                //);
+                smsProvider.SendSMSService(
+                ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + findUserMobileNumber.phoneNumber
+                );
                 checkSentCount.code = code;
                 checkSentCount.resendCount = checkSentCount.resendCount + 1;
                 await context.SaveChangesAsync();

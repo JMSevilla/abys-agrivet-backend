@@ -1,6 +1,6 @@
 ﻿namespace abys_agrivet_backend.Interfaces;
 
-public interface IAppointment
+public interface ILobby
 {
     int id { get; set; }
     string email { get; set; }
@@ -18,5 +18,4 @@ public interface IAppointment
     int? managersId { get; set; }
     DateTime created_at { get; set; }
     DateTime updated_at { get; set; }
-    DateTime archive_indicator { get; set; }
 }

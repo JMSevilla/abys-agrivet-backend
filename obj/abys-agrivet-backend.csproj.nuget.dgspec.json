@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\jm4583104\\OneDrive - Willis Towers Watson\\Desktop\\abys-agrivet\\abys-agrivet-backend\\abys-agrivet-backend\\abys-agrivet-backend.csproj": {}
+    "C:\\xampp\\htdocs\\abys-agrivet-be\\abys-agrivet-backend\\abys-agrivet-backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\jm4583104\\OneDrive - Willis Towers Watson\\Desktop\\abys-agrivet\\abys-agrivet-backend\\abys-agrivet-backend\\abys-agrivet-backend.csproj": {
+    "C:\\xampp\\htdocs\\abys-agrivet-be\\abys-agrivet-backend\\abys-agrivet-backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\jm4583104\\OneDrive - Willis Towers Watson\\Desktop\\abys-agrivet\\abys-agrivet-backend\\abys-agrivet-backend\\abys-agrivet-backend.csproj",
+        "projectUniqueName": "C:\\xampp\\htdocs\\abys-agrivet-be\\abys-agrivet-backend\\abys-agrivet-backend.csproj",
         "projectName": "abys-agrivet-backend",
-        "projectPath": "C:\\Users\\jm4583104\\OneDrive - Willis Towers Watson\\Desktop\\abys-agrivet\\abys-agrivet-backend\\abys-agrivet-backend\\abys-agrivet-backend.csproj",
+        "projectPath": "C:\\xampp\\htdocs\\abys-agrivet-be\\abys-agrivet-backend\\abys-agrivet-backend.csproj",
         "packagesPath": "C:\\Users\\jm4583104\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\jm4583104\\OneDrive - Willis Towers Watson\\Desktop\\abys-agrivet\\abys-agrivet-backend\\abys-agrivet-backend\\obj\\",
+        "outputPath": "C:\\xampp\\htdocs\\abys-agrivet-be\\abys-agrivet-backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\jm4583104\\AppData\\Roaming\\NuGet\\NuGet.Config"

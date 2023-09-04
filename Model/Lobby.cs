@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using abys_agrivet_backend.Interfaces;
 
 namespace abys_agrivet_backend.Model;
-[Table("appointment")]
-public class Appointment : IAppointment
+[Table("appointment_lobby")]
+public class Lobby : ILobby
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -24,5 +24,4 @@ public class Appointment : IAppointment
     public int? managersId { get; set; }
     public DateTime created_at { get; set; }
     public DateTime updated_at { get; set; }
-    public DateTime archive_indicator { get; set; }
 }

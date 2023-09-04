@@ -10,4 +10,5 @@ public interface VerificationRepository<T> where T : class, IVerification
     public Task<dynamic> SMSResendVerificationCode(string type, string email);
     public Task SendEmailSMTPWithCode(string email, string code, string? body);
     public Task SendWelcomeEmailSMTPWithoutCode(string email, string? body);
+    public Task<dynamic> ReminderSystem(int type, int id, string email, string phoneNumber);
 }

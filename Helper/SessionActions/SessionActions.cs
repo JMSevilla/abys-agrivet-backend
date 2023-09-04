@@ -5,4 +5,5 @@ public class SessionActions
     public string actions { get; set; }
     public int id { get; set; }
     public int managerUid { get; set; }
+    public int? deletionId { get; set; }
 }
