@@ -8,15 +8,20 @@ using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.JWTResponse;
 using abys_agrivet_backend.Helper.LoginParams;
+using abys_agrivet_backend.Helper.MailSettings;
 using abys_agrivet_backend.Helper.UsersProps;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.UsersRepository;
 using abys_agrivet_backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace abys_agrivet_backend.BusinessLayer.Logics;
 
@@ -28,17 +33,31 @@ where TContext : APIDBContext
     private readonly UserManager<JWTIdentity> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private IConfiguration _configuration;
+    private APIDBContext context1;
+    private UserManager<JWTIdentity> userManager;
+    private RoleManager<IdentityRole> roleManager;
+    private IConfiguration configuration;
+    private readonly MailSettings _mailSettings;
 
     public EntityFrameworkUsers(
         TContext context,
         UserManager<JWTIdentity> userManager,
         RoleManager<IdentityRole> roleManager,
-        IConfiguration configuration)
+        IConfiguration configuration, IOptions<MailSettings> mailSettings)
     {
         this.context = context;
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
+        _mailSettings = mailSettings.Value;
+    }
+
+    protected EntityFrameworkUsers(APIDBContext context1, UserManager<JWTIdentity> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+    {
+        this.context1 = context1;
+        this.userManager = userManager;
+        this.roleManager = roleManager;
+        this.configuration = configuration;
     }
 
     public async Task<bool> SetupApplicationFindAnyUsersFromDB()
@@ -54,20 +73,28 @@ where TContext : APIDBContext
 
     public async Task<TEntity> SetupAccountFirstUserOfTheApplication(TEntity entity)
     {
-        var smsProvider = new SMSTwilioService();
-        string mightHashPassword = BCrypt.Net.BCrypt.HashPassword(entity.password);
-        entity.password = mightHashPassword;
-        entity.access_level = 1;
-        entity.branch = 6;
-        entity.status = Convert.ToChar("1");
-        entity.phoneNumber = entity.phoneNumber;
-        entity.imgurl = "no-image-found";
-        entity.verified = Convert.ToChar("1");
-        entity.created_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-        entity.updated_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-        smsProvider.SendSMSService("You've successfully registered on the application", entity.phoneNumber);
-        context.Set<TEntity>().Add(entity);
-        await context.SaveChangesAsync();
+        // var smsProvider = new SMSTwilioService();
+        var findBranchId = await context.Branches
+        .Where(x => x.branchKey == "all").FirstOrDefaultAsync();
+
+        if (findBranchId != null)
+        {
+            string mightHashPassword = BCrypt.Net.BCrypt.HashPassword(entity.password);
+            entity.password = mightHashPassword;
+            entity.access_level = 1;
+            entity.branch = findBranchId.branch_id;
+            entity.status = Convert.ToChar("1");
+            entity.phoneNumber = entity.phoneNumber;
+            entity.imgurl = "no-image-found";
+            entity.verified = Convert.ToChar("1");
+            entity.created_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+            entity.updated_at = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+            // smsProvider.SendSMSService("You've successfully registered on the application", entity.phoneNumber);
+            await SendWelcomeEmailSMTPWithoutCode(entity.email, "You've successfully registered on the application");
+            context.Set<TEntity>().Add(entity);
+            await context.SaveChangesAsync();
+            return entity;
+        }
         return entity;
     }
 
@@ -548,5 +575,48 @@ where TContext : APIDBContext
             }
         }
         return entityToBeUpdate;
+    }
+
+    public async Task SendEmailSMTPWithCode(string email, string code, string? body)
+    {
+        string FilePath = Directory.GetCurrentDirectory() + "\\Templates\\emailTemplate.html";
+        StreamReader str = new StreamReader(FilePath);
+        string MailText = str.ReadToEnd();
+        str.Close();
+        MailText = MailText.Replace("[username]", "User").Replace("[email]", email).Replace("[verificationCode]", code)
+            .Replace("[body]", body);
+        var mail = new MimeMessage();
+        mail.Sender = MailboxAddress.Parse(_mailSettings.Mail);
+        mail.To.Add(MailboxAddress.Parse(email));
+        mail.Subject = $"Welcome {email}";
+        var builder = new BodyBuilder();
+        builder.HtmlBody = MailText;
+        mail.Body = builder.ToMessageBody();
+        using var smtp = new SmtpClient();
+        smtp.Connect(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
+        smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
+        await smtp.SendAsync(mail);
+        smtp.Disconnect(true);
+    }
+    public async Task SendWelcomeEmailSMTPWithoutCode(string email, string? body)
+    {
+        string FilePath = Directory.GetCurrentDirectory() + "\\Templates\\welcomeTemplate.html";
+        StreamReader str = new StreamReader(FilePath);
+        string MailText = str.ReadToEnd();
+        str.Close();
+        MailText = MailText.Replace("[username]", "User").Replace("[email]", email)
+            .Replace("[body]", body);
+        var mail = new MimeMessage();
+        mail.Sender = MailboxAddress.Parse(_mailSettings.Mail);
+        mail.To.Add(MailboxAddress.Parse(email));
+        mail.Subject = $"Welcome {email}";
+        var builder = new BodyBuilder();
+        builder.HtmlBody = MailText;
+        mail.Body = builder.ToMessageBody();
+        using var smtp = new SmtpClient();
+        smtp.Connect(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
+        smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
+        await smtp.SendAsync(mail);
+        smtp.Disconnect(true);
     }
 }

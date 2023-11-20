@@ -278,22 +278,39 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         }
     }
 
-    public async Task<dynamic> GetAllSchedulePerBranch(int branch)
+    public async Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid)
     {
         int[] holidays = new[] { 1, 0, 2 };
         int[] statuses = new[] { 1, 0 };
         int[] branchesAccepted = new[] { 1, 2, 3, 4, 5, 6 };
-        var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
-                && statuses.Contains(x.status ?? 0))
-            .Select(t => new
-            {
-                t.id,
-                t.title,
-                t.start,
-                t.end,
-                isHoliday = t.isHoliday == 1 ? true : false
-            }).ToListAsync();
-        return getAllSchedule;
+        if (userid == 0)
+        {
+            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
+                    && statuses.Contains(x.status ?? 0))
+                .Select(t => new
+                {
+                    t.id,
+                    t.title,
+                    t.start,
+                    t.end,
+                    isHoliday = t.isHoliday == 1 ? true : false
+                }).ToListAsync();
+            return getAllSchedule;
+        }
+        else
+        {
+            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
+                    && statuses.Contains(x.status ?? 0) && x.userid == userid)
+                .Select(t => new
+                {
+                    t.id,
+                    t.title,
+                    t.start,
+                    t.end,
+                    isHoliday = t.isHoliday == 1 ? true : false
+                }).ToListAsync();
+            return getAllSchedule;
+        }
     }
 
     public async Task<dynamic> RemoveSelectedSchedule(int id)
@@ -514,6 +531,12 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         return 200;
     }
 
+    public async Task<dynamic> FindPrimaryAppointments(int id)
+    {
+        var gained = await context.Appointments.Where(x => x.id == id).ToListAsync();
+        return gained;
+    }
+
     public async Task<int> CountAdminDashboardCountable(string type)
     {
         int[] managers = new[] { 1, 2, 3, 4, 5 };
@@ -556,7 +579,8 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     }
     public async Task<dynamic> FindAppointmentsByEmail(string email)
     {
-        var appointmentByEmail = await context.Set<TEntity>().Where(x => x.email == email && x.status == 2).ToListAsync();
+        int[] stats = new int[] { 1, 2 };
+        var appointmentByEmail = await context.Set<TEntity>().Where(x => x.email == email && stats.Contains(x.status)).ToListAsync();
         return appointmentByEmail;
     }
 
@@ -565,6 +589,14 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     public async Task<dynamic> FindRecordManagementPerBranch(int branch_id)
     {
         var result = await context.Set<TEntity>().Where(x => x.status == 2 && x.branch_id == branch_id).ToListAsync();
+        return result;
+    }
+
+    public async Task<dynamic> GetAllAppointmentBranch()
+    {
+        int[] allBranches = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        var result = await context.Set<TEntity>()
+            .Where(x => allBranches.Contains(x.branch_id)).ToListAsync();
         return result;
     }
 
@@ -772,6 +804,19 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         if (updateToArchive != null)
         {
             updateToArchive.status = 3;
+            await context.SaveChangesAsync();
+            return 200;
+        }
+        return 400;
+    }
+
+    public async Task<dynamic> DeleteRecords(int id)
+    {
+        var result = await context.Appointments.Where(x => x.id == id)
+        .FirstOrDefaultAsync();
+        if (result != null)
+        {
+            context.Appointments.Remove(result);
             await context.SaveChangesAsync();
             return 200;
         }

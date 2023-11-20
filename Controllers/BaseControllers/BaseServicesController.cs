@@ -1,6 +1,7 @@
 ﻿using abys_agrivet_backend.Authentication;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.ServicesRepository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace abys_agrivet_backend.Controllers.BaseControllers;
@@ -36,6 +37,22 @@ where TRepository : ServicesRepository<TEntity>
     public async Task<IActionResult> DeleteService([FromRoute] int id)
     {
         var result = await _repository.DeleteService(id);
+        return Ok(result);
+    }
+
+    [Route("activate-service/{id}/{type}"), HttpPut]
+    [AllowAnonymous]
+    public async Task<IActionResult> ActivateService([FromRoute] int id, [FromRoute] string type)
+    {
+        var result = await _repository.ChangeActivation(id, type);
+        return Ok(result);
+    }
+
+    [Route("service-modification/{id}/{serviceName}"), HttpPut]
+    [AllowAnonymous]
+    public async Task<IActionResult> ServiceModification([FromRoute] int id, [FromRoute] string serviceName)
+    {
+        var result = await _repository.Modification(id, serviceName);
         return Ok(result);
     }
 }

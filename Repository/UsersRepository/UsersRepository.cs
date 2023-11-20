@@ -30,4 +30,6 @@ public interface UsersRepository<T> where T : class, IUsers
     public Task<dynamic> UpdateProfile(UsersParameters usersParameters);
     public Task<List<T>> FilterByAccessLevel(int access_level);
     public Task<List<Model.Services>> FilterServicesByBranch(int branch_id);
+    public Task SendEmailSMTPWithCode(string email, string code, string? body);
+    public Task SendWelcomeEmailSMTPWithoutCode(string email, string? body);
 }

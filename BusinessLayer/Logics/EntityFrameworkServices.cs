@@ -41,4 +41,32 @@ where TContext : APIDBContext
 
         return 401;
     }
+
+    public async Task<dynamic> ChangeActivation(int id, string type)
+    {
+        var result = await context.ServicesEnumerable.Where(x => x.id == id)
+            .FirstOrDefaultAsync();
+        if (result != null)
+        {
+            result.serviceStatus = type == "activate" ? 1 : 0;
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 400;
+    }
+
+    public async Task<dynamic> Modification(int id, string serviceName)
+    {
+        var result = await context.ServicesEnumerable.Where(x => x.id == id)
+            .FirstOrDefaultAsync();
+        if (result != null)
+        {
+            result.serviceName = serviceName;
+            await context.SaveChangesAsync();
+            return 200;
+        }
+
+        return 400;
+    }
 }

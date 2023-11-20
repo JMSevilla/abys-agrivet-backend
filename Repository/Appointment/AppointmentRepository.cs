@@ -11,7 +11,7 @@ public interface AppointmentRepository<T> where T : class, IAppointment
     public Task<dynamic> makeAnAppointment(T entity);
     public Task<dynamic> createSchedule(Schedule schedule);
 
-    public Task<dynamic> GetAllSchedulePerBranch(int branch);
+    public Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid);
     public Task<dynamic> RemoveSelectedSchedule(int id);
     public Task<dynamic> getHighestID();
     public Task<dynamic> checkBeforeRemoving(int removeId);
@@ -37,8 +37,10 @@ public interface AppointmentRepository<T> where T : class, IAppointment
     public Task<dynamic> DeleteWhenProceedFromLobby(int id);
     public Task<int> countAppointments(int branch_id, string type);
     public Task<dynamic> FindRecordManagementPerBranch(int branch_id);
+    public Task<dynamic> GetAllAppointmentBranch();
     public Task<dynamic> findUserByManagerId(int manager_id);
     public Task<dynamic> FindFollowUpsOnRecordManagement(int id);
+    public Task<dynamic> FindPrimaryAppointments(int id);
     public Task<int> CountAdminDashboardCountable(string type);
     public Task<dynamic> FindAppointmentsByEmail(string email);
     public Task<int> countAppointmentsCardCustomer(string type, string email);
@@ -48,4 +50,5 @@ public interface AppointmentRepository<T> where T : class, IAppointment
 
     public Task<List<T>> FilterRecordsByBranch(int branch_id);
     public Task<dynamic> UpdateStatusToArchiveAppointment(int id);
+    public Task<dynamic> DeleteRecords(int id);
 }

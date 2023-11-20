@@ -4,6 +4,7 @@ using abys_agrivet_backend.Helper.SessionActions;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Model;
 using abys_agrivet_backend.Repository.Appointment;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace abys_agrivet_backend.Controllers.BaseControllers;
@@ -36,10 +37,10 @@ where TRepository : AppointmentRepository<TEntity>
         return Ok(result);
     }
 
-    [Route("get-all-schedule-per-branch/{branch}"), HttpGet]
-    public async Task<IActionResult> GetAllSchedulePerBranch([FromRoute] int branch)
+    [Route("get-all-schedule-per-branch/{branch}/{userid}"), HttpGet]
+    public async Task<IActionResult> GetAllSchedulePerBranch([FromRoute] int branch, [FromRoute] int userid)
     {
-        var result = await _repository.GetAllSchedulePerBranch(branch);
+        var result = await _repository.GetAllSchedulePerBranch(branch, userid);
         return Ok(result);
     }
 
@@ -225,6 +226,14 @@ where TRepository : AppointmentRepository<TEntity>
         return Ok(result);
     }
 
+    [Route("get-all-record-all-branch"), HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllRecordAllBranch()
+    {
+        var result = await _repository.GetAllAppointmentBranch();
+        return Ok(result);
+    }
+
     [Route("get-user-by-manager-id/{manager_id}"), HttpGet]
     public async Task<IActionResult> getUserByManagerId([FromRoute] int manager_id)
     {
@@ -236,6 +245,14 @@ where TRepository : AppointmentRepository<TEntity>
     public async Task<IActionResult> FindFollowUpsByAppointmentId([FromRoute] int id)
     {
         var result = await _repository.FindFollowUpsOnRecordManagement(id);
+        return Ok(result);
+    }
+
+    [Route("find-primary-appointments/{id}"), HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> FindPrimaryAppointments([FromRoute] int id)
+    {
+        var result = await _repository.FindPrimaryAppointments(id);
         return Ok(result);
     }
 
@@ -285,6 +302,14 @@ where TRepository : AppointmentRepository<TEntity>
     public async Task<IActionResult> PushToArchive([FromRoute] int id)
     {
         var result = await _repository.UpdateStatusToArchiveAppointment(id);
+        return Ok(result);
+    }
+
+    [Route("delete-records/{id}"), HttpDelete]
+    [AllowAnonymous]
+    public async Task<IActionResult> DeleteRecords([FromRoute] int id)
+    {
+        var result = await _repository.DeleteRecords(id);
         return Ok(result);
     }
 }

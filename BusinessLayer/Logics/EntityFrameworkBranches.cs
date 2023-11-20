@@ -104,6 +104,13 @@ where TContext : APIDBContext
 
     public async Task<List<TEntity>> BranchExceptAllBranch()
     {
+        var allBranchFiltered = await context.Branches.Where(
+            x => x.branchKey == "all"
+        ).FirstOrDefaultAsync();
+        if (allBranchFiltered != null)
+        {
+            return await context.Set<TEntity>().Where(x => x.branch_id != allBranchFiltered.branch_id).ToListAsync();
+        }
         return await context.Set<TEntity>().Where(x => x.branch_id != 6).ToListAsync();
     }
 }
