@@ -280,34 +280,33 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
 
     public async Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid)
     {
-        int[] holidays = new[] { 1, 0, 2 };
+        int[] holidays = new[] { 1, 2 };
         int[] statuses = new[] { 1, 0 };
-        int[] branchesAccepted = new[] { 1, 2, 3, 4, 5, 6 };
         if (userid == 0)
         {
-            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
-                    && statuses.Contains(x.status ?? 0))
+            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch
+                    || x.branch == 8)
                 .Select(t => new
                 {
                     t.id,
                     t.title,
                     t.start,
                     t.end,
-                    isHoliday = t.isHoliday == 1 ? true : false
+                    isHoliday = t.isHoliday == 1 || t.isHoliday == 2 ? true : false
                 }).ToListAsync();
             return getAllSchedule;
         }
         else
         {
-            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch && holidays.Contains(x.isHoliday)
-                    && statuses.Contains(x.status ?? 0) && x.userid == userid)
+            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch
+                     || x.userid == userid || x.branch == 8)
                 .Select(t => new
                 {
                     t.id,
                     t.title,
                     t.start,
                     t.end,
-                    isHoliday = t.isHoliday == 1 ? true : false
+                    isHoliday = t.isHoliday == 1 || t.isHoliday == 2 ? true : false
                 }).ToListAsync();
             return getAllSchedule;
         }
