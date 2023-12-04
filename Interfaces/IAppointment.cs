@@ -3,6 +3,7 @@
 public interface IAppointment
 {
     int id { get; set; }
+    int scheduleId { get; set; }
     string email { get; set; }
     string phoneNumber { get; set; }
     string fullName { get; set; }

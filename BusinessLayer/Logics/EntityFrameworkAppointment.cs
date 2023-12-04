@@ -148,6 +148,9 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         var code = GenerateVerificationCode.GenerateCode();
         if (entity != null)
         {
+            var highestIdFromSchedule = await context.Schedules
+                .OrderByDescending(x => x.id)
+                .Select(x => x.id).FirstOrDefaultAsync();
             GSched[]? schedules = JsonSerializer.Deserialize<GSched[]>(entity.appointmentSchedule);
             if (entity.isWalkedIn == 1)
             {
@@ -234,6 +237,7 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
                     /*email service from smtp*/
                     SendAppointmentEmailSMTPTWithoutCode(entity.email,
                         "Thank you for making an appointment we will notify you ahead of time");
+                    entity.scheduleId = highestIdFromSchedule;
                     entity.created_at = entity.created_at.AddDays(1);
                     entity.updated_at = entity.updated_at.AddDays(1);
                     entity.archive_indicator = DateTime.Today;
@@ -246,6 +250,7 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
                     smsProvider.SendSMSService(
                         "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
                     );
+                    entity.scheduleId = highestIdFromSchedule;
                     entity.created_at = entity.created_at.AddDays(1);
                     entity.updated_at = entity.updated_at.AddDays(1);
                     entity.archive_indicator = DateTime.Today;
@@ -298,8 +303,10 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         }
         else
         {
-            var getAllSchedule = await context.Schedules.Where(x => x.branch == branch
-                     || x.userid == userid || x.branch == 8)
+            var foundBranch = await context.Branches.Where(x => x.branchKey == "all")
+                .FirstOrDefaultAsync();
+            var getAllSchedule = await context.Schedules.Where(x => (x.branch == branch
+                                                                     && x.userid == userid) || x.branch == foundBranch.branch_id)
                 .Select(t => new
                 {
                     t.id,
@@ -315,9 +322,12 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     public async Task<dynamic> RemoveSelectedSchedule(int id)
     {
         var entityRemove = await context.Schedules.FindAsync(id);
-        if (entityRemove != null)
+        var entityAppointmentRemove = await context.Appointments.Where(x => x.scheduleId == id)
+            .FirstOrDefaultAsync();
+        if (entityRemove != null && entityAppointmentRemove != null)
         {
             context.Schedules.Remove(entityRemove);
+            context.Appointments.Remove(entityAppointmentRemove);
             await context.SaveChangesAsync();
             return 200;
         }
@@ -338,7 +348,8 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     public async Task<dynamic> checkBeforeRemoving(int removeId)
     {
         var checkFromSchedules = await context.Schedules.AnyAsync(x => x.id == removeId);
-        if (checkFromSchedules)
+        var checkFromAppointment = await context.Appointments.AnyAsync(x => x.scheduleId == removeId);
+        if (checkFromSchedules && checkFromAppointment)
         {
             return 200;
         }
@@ -595,7 +606,7 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     {
         int[] allBranches = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         var result = await context.Set<TEntity>()
-            .Where(x => allBranches.Contains(x.branch_id)).ToListAsync();
+            .Where(x => allBranches.Contains(x.branch_id) && x.status == 2).ToListAsync();
         return result;
     }
 
@@ -790,9 +801,10 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
 
     public async Task<List<TEntity>> FilterRecordsByBranch(int branch_id)
     {
+        var foundBranch = await context.Branches.Where(x => x.branchKey == "all")
+            .FirstOrDefaultAsync();
         var filtered = await context.Set<TEntity>().Where(
-            x => x.branch_id == branch_id
-        ).ToListAsync();
+            x => (x.branch_id == branch_id && x.status == 2) || x.branch_id == foundBranch.branch_id).ToListAsync();
         return filtered;
     }
 

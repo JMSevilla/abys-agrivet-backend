@@ -9,6 +9,8 @@ public class Appointment : IAppointment
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int id { get; set; }
+
+    public int scheduleId { get; set; }
     public string email { get; set; }
     public string phoneNumber { get; set; }
     public string fullName { get; set; }

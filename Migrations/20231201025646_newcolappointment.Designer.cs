@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using abys_agrivet_backend.DB;
 
@@ -11,9 +12,11 @@ using abys_agrivet_backend.DB;
 namespace abys_agrivet_backend.Migrations
 {
     [DbContext(typeof(APIDBContext))]
-    partial class APIDBContextModelSnapshot : ModelSnapshot
+    [Migration("20231201025646_newcolappointment")]
+    partial class newcolappointment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -449,9 +452,6 @@ namespace abys_agrivet_backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("reminderType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("scheduleId")
                         .HasColumnType("int");
 
                     b.Property<string>("service_id")
