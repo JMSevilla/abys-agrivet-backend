@@ -8,7 +8,6 @@ using abys_agrivet_backend.Helper.ForgotPassword;
 using abys_agrivet_backend.Helper.JWT;
 using abys_agrivet_backend.Helper.JWTResponse;
 using abys_agrivet_backend.Helper.LoginParams;
-using abys_agrivet_backend.Helper.MailSettings;
 using abys_agrivet_backend.Helper.UsersProps;
 using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.UsersRepository;
@@ -22,6 +21,9 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+using MailSettings = abys_agrivet_backend.Helper.MailSettings.MailSettings;
 
 namespace abys_agrivet_backend.BusinessLayer.Logics;
 
@@ -579,7 +581,7 @@ where TContext : APIDBContext
 
     public async Task SendEmailSMTPWithCode(string email, string code, string? body)
     {
-        string FilePath = Directory.GetCurrentDirectory() + "\\Templates\\emailTemplate.html";
+        /*string FilePath = Directory.GetCurrentDirectory() + "\\Templates\\emailTemplate.html";
         StreamReader str = new StreamReader(FilePath);
         string MailText = str.ReadToEnd();
         str.Close();
@@ -596,27 +598,53 @@ where TContext : APIDBContext
         smtp.Connect(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
         smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
         await smtp.SendAsync(mail);
-        smtp.Disconnect(true);
+        smtp.Disconnect(true);*/
+        var apiKey = "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";
+        var client = new SendGridClient(apiKey);
+        var from = new EmailAddress("agrivetabys@gmail.com", "Abys Agrivet System");
+        var subject = "Abys Agrivet Notification";
+        var to = new EmailAddress(email, "User");
+        var plainTextContent = "ABYS AGRIVET NOTIFICATIONS";
+        var htmlContent = @"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>OTP Email</title>
+</head>
+<body>
+    <div style=""text-align: center;"">
+        <h1>Your OTP Code</h1>
+        <p>Use the following code to verify your account:</p>
+        <h2 style=""color: #007bff;"">" + code + @"</h2>
+    </div>
+</body>
+</html>";
+        var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+        await client.SendEmailAsync(msg);
     }
     public async Task SendWelcomeEmailSMTPWithoutCode(string email, string? body)
     {
-        string FilePath = Directory.GetCurrentDirectory() + "\\Templates\\welcomeTemplate.html";
-        StreamReader str = new StreamReader(FilePath);
-        string MailText = str.ReadToEnd();
-        str.Close();
-        MailText = MailText.Replace("[username]", "User").Replace("[email]", email)
-            .Replace("[body]", body);
-        var mail = new MimeMessage();
-        mail.Sender = MailboxAddress.Parse(_mailSettings.Mail);
-        mail.To.Add(MailboxAddress.Parse(email));
-        mail.Subject = $"Welcome {email}";
-        var builder = new BodyBuilder();
-        builder.HtmlBody = MailText;
-        mail.Body = builder.ToMessageBody();
-        using var smtp = new SmtpClient();
-        smtp.Connect(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
-        smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
-        await smtp.SendAsync(mail);
-        smtp.Disconnect(true);
+        var apiKey = "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";
+        var client = new SendGridClient(apiKey);
+        var from = new EmailAddress("agrivetabys@gmail.com", "Abys Agrivet System");
+        var subject = "Abys Agrivet Notification";
+        var to = new EmailAddress(email, "User");
+        var plainTextContent = "ABYS AGRIVET NOTIFICATIONS";
+        var htmlContent = @"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>OTP Email</title>
+</head>
+<body>
+    <div style=""text-align: center;"">
+        <h2 style=""color: #007bff;"">" + body + @"</h2>
+    </div>
+</body>
+</html>";
+        var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+        await client.SendEmailAsync(msg);
     }
 }

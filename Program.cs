@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 builder.Services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
 builder.Services.AddDbContext<APIDBContext>(options => 
-    options.UseSqlServer(configuration["connectionStrings:localenv"],
+    options.UseSqlServer(configuration["connectionStrings:prodenv"],
         providerOptions => providerOptions.EnableRetryOnFailure())
 );
 

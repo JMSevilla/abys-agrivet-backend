@@ -259,3 +259,5 @@ C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\obj\Debug\net7.0\refint\aby
 C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\obj\Debug\net7.0\abys-agrivet-backend.pdb
 C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\obj\Debug\net7.0\abys-agrivet-backend.genruntimeconfig.cache
 C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\obj\Debug\net7.0\ref\abys-agrivet-backend.dll
+C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\bin\Debug\net7.0\SendGrid.dll
+C:\xampp\htdocs\abys-agrivet-be\abys-agrivet-backend\bin\Debug\net7.0\StarkbankEcdsa.dll

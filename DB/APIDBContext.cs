@@ -12,14 +12,6 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        // builder.Ignore<Users>();
-        // builder.Ignore<Branch>();
-        // builder.Ignore<Verification>();
-        // builder.Ignore<Model.Services>();
-        // builder.Ignore<Schedule>();
-        // builder.Ignore<Appointment>();
-        // builder.Ignore<FollowUpAppointment>();
-        // builder.Ignore<Lobby>();
     }
     public DbSet<Users> UsersEnumerable { get; set; }
     public DbSet<Branch> Branches { get; set; }
