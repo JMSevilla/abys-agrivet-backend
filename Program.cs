@@ -64,7 +64,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(myappOrigins, policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://abys-agrivet-frontend.vercel.app")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
