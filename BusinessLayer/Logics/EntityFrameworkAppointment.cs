@@ -291,12 +291,11 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
 
     public async Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid)
     {
-        int[] holidays = new[] { 1, 2 };
-        int[] statuses = new[] { 1, 0 };
         if (userid == 0)
         {
+            var getAllBranch = await context.Branches.Where(x => x.branchKey == "all").FirstOrDefaultAsync();
             var getAllSchedule = await context.Schedules.Where(x => x.branch == branch
-                    || x.branch == 8)
+                    || x.branch == getAllBranch.branch_id)
                 .Select(t => new
                 {
                     t.id,
@@ -811,9 +810,18 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
     {
         var foundBranch = await context.Branches.Where(x => x.branchKey == "all")
             .FirstOrDefaultAsync();
-        var filtered = await context.Set<TEntity>().Where(
-            x => (x.branch_id == branch_id && x.status == 2) || x.branch_id == foundBranch.branch_id).ToListAsync();
-        return filtered;
+        if (foundBranch.branch_id == branch_id)
+        {
+            var filtered = await context.Set<TEntity>().Where(
+                x => x.branch_id == branch_id && x.status == 2).ToListAsync();
+            return filtered;
+        }
+        else
+        {
+            var filtered = await context.Set<TEntity>().Where(
+                x => x.branch_id == branch_id && x.status == 2).ToListAsync();
+            return filtered;
+        }
     }
 
     public async Task<dynamic> UpdateStatusToArchiveAppointment(int id)
