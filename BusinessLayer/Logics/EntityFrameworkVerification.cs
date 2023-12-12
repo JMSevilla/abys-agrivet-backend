@@ -42,6 +42,8 @@ where TContext : APIDBContext
                 }
                 else
                 {
+                    var getApiKey = await context.TwillioAuths
+                        .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                     string code = GenerateVerificationCode.GenerateCode();
                     updateEntityVerification.code = code;
                     updateEntityVerification.resendCount = updateEntityVerification.resendCount + 1;
@@ -49,20 +51,22 @@ where TContext : APIDBContext
                     updateEntityVerification.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                     await context.SaveChangesAsync();
                     smsProvider.SendSMSService(
-                        ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
+                        ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                     );
                     return 200;
                 }
             }
             else
             {
+                var getApiKey = await context.TwillioAuths
+                    .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                 entity.code = GenerateVerificationCode.GenerateCode();
                 entity.isValid = 1;
                 entity.resendCount = 1;
                 entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                 entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                  smsProvider.SendSMSService(
-                    ""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber
+                    ""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                 );
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
@@ -119,9 +123,11 @@ where TContext : APIDBContext
         }
         else
         {
+            var getApiKey = await context.TwillioAuths
+                .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
             updateNotify.notify = 1;
             smsProvider.SendSMSService(
-                "We would like to remind you about your appointment tomorrow. Please go to the vet.", "+63" + phoneNumber
+                "We would like to remind you about your appointment tomorrow. Please go to the vet.", "+63" + phoneNumber, getApiKey.accountSID, getApiKey.authtoken
             );
             await context.SaveChangesAsync();
             return 200;
@@ -191,9 +197,11 @@ where TContext : APIDBContext
             }
             else
             {
+                var getApiKey = await context.TwillioAuths
+                    .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                 var code = GenerateVerificationCode.GenerateCode();
                 smsProvider.SendSMSService(
-                ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + findUserMobileNumber.phoneNumber
+                ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + findUserMobileNumber.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                 );
                 checkSentCount.code = code;
                 checkSentCount.resendCount = checkSentCount.resendCount + 1;

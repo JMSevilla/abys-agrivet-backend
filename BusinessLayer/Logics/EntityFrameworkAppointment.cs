@@ -169,8 +169,10 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
                         }
                         else
                         {
+                            var getApiKey = await context.TwillioAuths
+                                .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                             smsProvider.SendSMSService(
-                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                             );
                         }
 
@@ -205,8 +207,10 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
                         }
                         else
                         {
+                            var getApiKey = await context.TwillioAuths
+                                .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                             smsProvider.SendSMSService(
-                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                                "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                             );
                         }
                         Schedule scheduleprops = new Schedule();
@@ -247,8 +251,10 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
                 }
                 else
                 {
+                    var getApiKey = await context.TwillioAuths
+                        .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                     smsProvider.SendSMSService(
-                        "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber
+                        "Thank you for making an appointment we will notify you ahead of time", "+63" + entity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                     );
                     entity.scheduleId = highestIdFromSchedule;
                     entity.created_at = entity.created_at.AddDays(1);
@@ -644,9 +650,11 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
             }
             else
             {
+                var getApiKey = await context.TwillioAuths
+                    .Where(x => x.identifier == "twilio-auth").FirstOrDefaultAsync();
                 smsProvider.SendSMSService(
                     "You have a follow-up appointment on " + " " + followUpAppointment.start.ToString("MMMM dd, yyyy dddd") + "." + "Kindly please attend.",
-                    "+63" + updateEntity.phoneNumber
+                    "+63" + updateEntity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                 );
             }
             return 200;

@@ -22,4 +22,5 @@ public class APIDBContext : IdentityDbContext<JWTIdentity>
     public DbSet<FollowUpAppointment> FollowUpAppointments { get; set; }
     public DbSet<Lobby> Lobbies { get; set; }
     public DbSet<TPAuth> TpAuths { get; set; }
+    public DbSet<TwillioAuth> TwillioAuths { get; set; }
 }
