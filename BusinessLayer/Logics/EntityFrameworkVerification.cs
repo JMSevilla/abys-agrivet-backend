@@ -228,7 +228,7 @@ where TContext : APIDBContext
         smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
         await smtp.SendAsync(mail);
         smtp.Disconnect(true);*/
-        var apiKey = "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";
+        var apiKey = "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";
         var client = new SendGridClient(apiKey);
         var from = new EmailAddress("agrivetabys@gmail.com", "Abys Agrivet System");
         var subject = "Abys Agrivet Notification";
@@ -274,7 +274,7 @@ where TContext : APIDBContext
         await smtp.SendAsync(mail);
         smtp.Disconnect(true);*/
         
-        var apiKey = "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";
+        var apiKey = "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";
         var client = new SendGridClient(apiKey);
         var from = new EmailAddress("agrivetabys@gmail.com", "Abys Agrivet System");
         var subject = "Abys Agrivet Notification";
