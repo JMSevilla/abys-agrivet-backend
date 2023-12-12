@@ -1,6 +1,8 @@
 ﻿using abys_agrivet_backend.DB;
+using abys_agrivet_backend.Helper;
 using abys_agrivet_backend.Helper.VerificationCodeGenerator;
 using abys_agrivet_backend.Interfaces;
+using abys_agrivet_backend.Model;
 using abys_agrivet_backend.Repository.VerificationRepository;
 using abys_agrivet_backend.Services;
 using MailKit.Net.Smtp;
@@ -25,7 +27,7 @@ where TContext : APIDBContext
         this.context = context;
         this._mailSettings = mailSettings.Value;
     }
-    public async Task<dynamic> SMSVerificationDataManagement(TEntity entity, VerificationParamsRequest verificationParamsRequest)
+    public async Task<dynamic> SMSVerificationDataManagement(VerificationHelper entity)
     {
         var checkSentCount = await context.Set<TEntity>().Where(x => x.email == entity.email && x.isValid == 1).FirstOrDefaultAsync();
         var checkVerificationProfile = await context.Set<TEntity>().AnyAsync(x => x.email == entity.email && x.isValid == 1);
@@ -51,7 +53,7 @@ where TContext : APIDBContext
                     updateEntityVerification.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                     await context.SaveChangesAsync();
                     smsProvider.SendSMSService(
-                        ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
+                        ""+ code + " " + "is your Abys-Agrivet Verification Code", "+63" + entity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                     );
                     return 200;
                 }
@@ -66,9 +68,15 @@ where TContext : APIDBContext
                 entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                 entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                  smsProvider.SendSMSService(
-                    ""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + verificationParamsRequest.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
+                    ""+ entity.code + " " + "is your Abys-Agrivet Verification Code", "+63" + entity.phoneNumber, getApiKey.accountSID, getApiKey.authtoken
                 );
-                context.Set<TEntity>().Add(entity);
+                 Verification ver = new Verification();
+                 ver.isValid = 1;
+                 ver.code = entity.code;
+                 ver.resendCount = 1;
+                 ver.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                 ver.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                 await context.Set<Verification>().AddAsync(ver);
                 await context.SaveChangesAsync();
                 return 200;
             }
@@ -87,7 +95,7 @@ where TContext : APIDBContext
                     updateEntityVerification.resendCount = updateEntityVerification.resendCount + 1;
                     updateEntityVerification.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                     updateEntityVerification.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                    SendEmailSMTPWithCode(entity.email, updateEntityVerification.code,
+                    await SendEmailSMTPWithCode(entity.email, updateEntityVerification.code,
                         "Kindly use this code for forgot password request.");
                     await context.SaveChangesAsync();
                     return 200;
@@ -100,9 +108,16 @@ where TContext : APIDBContext
                 entity.resendCount = 1;
                 entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                 entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
-                SendEmailSMTPWithCode(entity.email, entity.code,
+                await SendEmailSMTPWithCode(entity.email, entity.code,
                     "Kindly use this code for forgot password request.");
-                context.Set<TEntity>().Add(entity);
+                Verification ver = new Verification();
+                ver.isValid = 1;
+                ver.code = entity.code;
+                ver.email = entity.email;
+                ver.resendCount = 1;
+                ver.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                ver.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
+                await context.Set<Verification>().AddAsync(ver);
                 await context.SaveChangesAsync();
                 return 200;
             }

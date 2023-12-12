@@ -1,4 +1,5 @@
-﻿using abys_agrivet_backend.Interfaces;
+﻿using abys_agrivet_backend.Helper;
+using abys_agrivet_backend.Interfaces;
 using abys_agrivet_backend.Repository.VerificationRepository;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,15 +17,10 @@ where TRepository : VerificationRepository<TEntity>
       this._repository = repository;
    }
 
-   [Route("send-verification-code-sms/{email}/{phoneNumber}"), HttpPost]
-   public async Task<IActionResult> SendSMSVerification([FromBody] TEntity entity, [FromRoute] string email,
-      [FromRoute] string phoneNumber)
+   [Route("send-verification-code-sms"), HttpPost]
+   public async Task<IActionResult> SendSMSVerification([FromBody] VerificationHelper entity)
    {
-      var result = await _repository.SMSVerificationDataManagement(entity, new()
-      {
-         email = email,
-         phoneNumber = phoneNumber
-      });
+      var result = await _repository.SMSVerificationDataManagement(entity);
       return Ok(result);
    }
 
