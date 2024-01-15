@@ -12,7 +12,7 @@ using abys_agrivet_backend.DB;
 namespace abys_agrivet_backend.Migrations
 {
     [DbContext(typeof(APIDBContext))]
-    [Migration("20231209144430_InitialMigration")]
+    [Migration("20240108093448_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -545,6 +545,48 @@ namespace abys_agrivet_backend.Migrations
                     b.HasKey("id");
 
                     b.ToTable("services");
+                });
+
+            modelBuilder.Entity("abys_agrivet_backend.Model.TPAuth", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("key")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("oauth")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("id");
+
+                    b.ToTable("tp_auth");
+                });
+
+            modelBuilder.Entity("abys_agrivet_backend.Model.TwillioAuth", b =>
+                {
+                    b.Property<Guid>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("accountSID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("authtoken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("identifier")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("id");
+
+                    b.ToTable("twillio_auth");
                 });
 
             modelBuilder.Entity("abys_agrivet_backend.Model.Users", b =>

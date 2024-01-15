@@ -168,6 +168,33 @@ namespace abys_agrivet_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "tp_auth",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    key = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    oauth = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tp_auth", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "twillio_auth",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    accountSID = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    authtoken = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    identifier = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_twillio_auth", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "users",
                 columns: table => new
                 {
@@ -429,6 +456,12 @@ namespace abys_agrivet_backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "services");
+
+            migrationBuilder.DropTable(
+                name: "tp_auth");
+
+            migrationBuilder.DropTable(
+                name: "twillio_auth");
 
             migrationBuilder.DropTable(
                 name: "users");
