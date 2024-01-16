@@ -65,6 +65,7 @@ where TContext : APIDBContext
                 entity.code = GenerateVerificationCode.GenerateCode();
                 entity.isValid = 1;
                 entity.resendCount = 1;
+                entity.email = entity.email;
                 entity.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                 entity.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                  smsProvider.SendSMSService(
@@ -74,6 +75,7 @@ where TContext : APIDBContext
                  ver.isValid = 1;
                  ver.code = entity.code;
                  ver.resendCount = 1;
+                 ver.email = entity.email;
                  ver.createdAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                  ver.updatedAt = Convert.ToDateTime(System.DateTime.Now.ToString("MM/dd/yyyy"));
                  await context.Set<Verification>().AddAsync(ver);
