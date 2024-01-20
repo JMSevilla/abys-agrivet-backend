@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Linq.Expressions;
 using abys_agrivet_backend.DB;
+using abys_agrivet_backend.Helper;
 using abys_agrivet_backend.Helper.MailSettings;
 using abys_agrivet_backend.Helper.Schedule;
 using abys_agrivet_backend.Helper.SearchEngine;
@@ -281,12 +282,20 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
         }
         else
         {
-            schedule.start = Convert.ToDateTime(schedule.start).ToLocalTime();
-            schedule.end = Convert.ToDateTime(schedule.end).ToLocalTime();
+            schedule.start = schedule.start;
+            schedule.end = schedule.end;
             await context.Schedules.AddAsync(schedule);
             await context.SaveChangesAsync();
             return 200;
         }
+    }
+
+    public async Task<dynamic> filterMechanism(TimeFilterCheckerParams timeFilterCheckerParams)
+    {
+        DateTime endTime = timeFilterCheckerParams.checkTime.AddHours(1);
+        var checkScheduleExists = await context.Schedules
+            .AnyAsync(x => x.start >= timeFilterCheckerParams.checkTime && x.start < endTime);
+        return checkScheduleExists;
     }
 
     public async Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid)

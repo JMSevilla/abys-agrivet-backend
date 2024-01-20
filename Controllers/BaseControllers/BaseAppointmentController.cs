@@ -1,4 +1,5 @@
 ﻿using abys_agrivet_backend.Authentication;
+using abys_agrivet_backend.Helper;
 using abys_agrivet_backend.Helper.SearchEngine;
 using abys_agrivet_backend.Helper.SessionActions;
 using abys_agrivet_backend.Interfaces;
@@ -34,6 +35,14 @@ where TRepository : AppointmentRepository<TEntity>
     public async Task<IActionResult> createNewSchedule([FromBody] Schedule schedule)
     {
         var result = await _repository.createSchedule(schedule);
+        return Ok(result);
+    }
+
+    [Route("time-filter-mechanism"), HttpPost]
+    [AllowAnonymous]
+    public async Task<IActionResult> FilterMechanism([FromBody] TimeFilterCheckerParams timeFilterCheckerParams)
+    {
+        var result = await _repository.filterMechanism(timeFilterCheckerParams);
         return Ok(result);
     }
 

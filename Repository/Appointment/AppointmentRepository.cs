@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using abys_agrivet_backend.Helper;
 using abys_agrivet_backend.Helper.SearchEngine;
 using abys_agrivet_backend.Helper.SessionActions;
 using abys_agrivet_backend.Interfaces;
@@ -10,7 +11,7 @@ public interface AppointmentRepository<T> where T : class, IAppointment
 {
     public Task<dynamic> makeAnAppointment(T entity);
     public Task<dynamic> createSchedule(Schedule schedule);
-
+    public Task<dynamic> filterMechanism(TimeFilterCheckerParams timeFilterCheckerParams);
     public Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid);
     public Task<dynamic> RemoveSelectedSchedule(int id);
     public Task<dynamic> getHighestID();
