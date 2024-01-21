@@ -46,6 +46,14 @@ where TRepository : AppointmentRepository<TEntity>
         return Ok(result);
     }
 
+    [Route("check-schedule-time"), HttpPost]
+    [AllowAnonymous]
+    public async Task<IActionResult> CheckScheduleTime([FromBody] TimeSchedule timeSchedule)
+    {
+        var result = await _repository.timeFilter(timeSchedule);
+        return Ok(result);
+    }
+
     [Route("get-all-schedule-per-branch/{branch}/{userid}"), HttpGet]
     public async Task<IActionResult> GetAllSchedulePerBranch([FromRoute] int branch, [FromRoute] int userid)
     {

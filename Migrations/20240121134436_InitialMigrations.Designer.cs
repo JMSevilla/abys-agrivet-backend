@@ -12,8 +12,8 @@ using abys_agrivet_backend.DB;
 namespace abys_agrivet_backend.Migrations
 {
     [DbContext(typeof(APIDBContext))]
-    [Migration("20240108093448_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20240121134436_InitialMigrations")]
+    partial class InitialMigrations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -493,6 +493,10 @@ namespace abys_agrivet_backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("mockSchedule")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("schedTime")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

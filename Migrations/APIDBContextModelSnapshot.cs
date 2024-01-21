@@ -493,6 +493,10 @@ namespace abys_agrivet_backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("schedTime")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("start")
                         .HasColumnType("datetime2");
 

@@ -12,6 +12,7 @@ public interface AppointmentRepository<T> where T : class, IAppointment
     public Task<dynamic> makeAnAppointment(T entity);
     public Task<dynamic> createSchedule(Schedule schedule);
     public Task<dynamic> filterMechanism(TimeFilterCheckerParams timeFilterCheckerParams);
+    public Task<dynamic> timeFilter(TimeSchedule timeSchedule);
     public Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid);
     public Task<dynamic> RemoveSelectedSchedule(int id);
     public Task<dynamic> getHighestID();

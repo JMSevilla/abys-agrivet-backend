@@ -15,6 +15,7 @@ public class Schedule : ISchedule
     public string mockSchedule { get; set; }
     public int? status { get; set; }
     public int isHoliday { get; set; }
+    public string schedTime { get; set; }
     public DateTime start { get; set; }
     public DateTime end { get; set; }
     public DateTime createdAt { get; set; }

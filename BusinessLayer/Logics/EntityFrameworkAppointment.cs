@@ -275,27 +275,28 @@ public abstract class EntityFrameworkAppointment<TEntity, TContext> : Appointmen
 
     public async Task<dynamic> createSchedule(Schedule schedule)
     {
-        var checkDay = await context.Schedules.AnyAsync(x => x.start == schedule.start);
-        if (checkDay)
-        {
-            return "already_scheduled";
-        }
-        else
-        {
-            schedule.start = schedule.start;
-            schedule.end = schedule.end;
-            await context.Schedules.AddAsync(schedule);
-            await context.SaveChangesAsync();
-            return 200;
-        }
+        schedule.start = schedule.start;
+        schedule.end = schedule.end;
+        schedule.schedTime = schedule.schedTime;
+        await context.Schedules.AddAsync(schedule);
+        await context.SaveChangesAsync();
+        return 200;
     }
-
+//deprecated
     public async Task<dynamic> filterMechanism(TimeFilterCheckerParams timeFilterCheckerParams)
     {
         DateTime endTime = timeFilterCheckerParams.checkTime.AddHours(1);
         var checkScheduleExists = await context.Schedules
             .AnyAsync(x => x.start >= timeFilterCheckerParams.checkTime && x.start < endTime);
         return checkScheduleExists;
+    }
+
+    public async Task<dynamic> timeFilter(TimeSchedule timeSchedule)
+    {
+        var IsTimeScheduleExists = await context.Schedules
+            .AnyAsync(x => x.start.Date == timeSchedule.start.Date && x.schedTime == timeSchedule.time
+            && x.status == 1);
+        return IsTimeScheduleExists;
     }
 
     public async Task<dynamic> GetAllSchedulePerBranch(int branch, int? userid)

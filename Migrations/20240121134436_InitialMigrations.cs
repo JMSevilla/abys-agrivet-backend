@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace abys_agrivet_backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -140,6 +140,7 @@ namespace abys_agrivet_backend.Migrations
                     mockSchedule = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     status = table.Column<int>(type: "int", nullable: true),
                     isHoliday = table.Column<int>(type: "int", nullable: false),
+                    schedTime = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     start = table.Column<DateTime>(type: "datetime2", nullable: false),
                     end = table.Column<DateTime>(type: "datetime2", nullable: false),
                     createdAt = table.Column<DateTime>(type: "datetime2", nullable: false),
